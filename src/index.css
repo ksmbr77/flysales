@@ -1,0 +1,196 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+@layer base {
+  :root {
+    --background: 140 20% 97%;
+    --foreground: 150 30% 10%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 150 30% 10%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 150 30% 10%;
+
+    --primary: 168 60% 25%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 140 14% 94%;
+    --secondary-foreground: 150 30% 10%;
+
+    --muted: 140 14% 94%;
+    --muted-foreground: 150 10% 45%;
+
+    --accent: 168 75% 30%;
+    --accent-foreground: 0 0% 100%;
+
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 140 13% 88%;
+    --input: 140 13% 88%;
+    --ring: 168 60% 25%;
+
+    --radius: 0.75rem;
+
+    --gradient-primary: linear-gradient(135deg, hsl(168 60% 25%) 0%, hsl(168 60% 35%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(168 75% 30%) 0%, hsl(168 75% 40%) 100%);
+    --gradient-card: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(140 20% 98%) 100%);
+    --gradient-progress: linear-gradient(90deg, hsl(168 60% 25%) 0%, hsl(142 71% 45%) 50%, hsl(168 75% 35%) 100%);
+
+    --shadow-sm: 0 1px 2px 0 hsl(150 30% 10% / 0.05);
+    --shadow-md: 0 4px 6px -1px hsl(150 30% 10% / 0.1), 0 2px 4px -2px hsl(150 30% 10% / 0.1);
+    --shadow-lg: 0 10px 15px -3px hsl(150 30% 10% / 0.1), 0 4px 6px -4px hsl(150 30% 10% / 0.1);
+    --shadow-glow: 0 0 20px hsl(168 75% 30% / 0.4);
+
+    --sidebar-background: 168 60% 20%;
+    --sidebar-foreground: 0 0% 100%;
+    --sidebar-primary: 168 75% 35%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 168 60% 28%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 168 60% 25%;
+    --sidebar-ring: 168 75% 35%;
+  }
+
+  .dark {
+    --background: 168 30% 8%;
+    --foreground: 0 0% 98%;
+
+    --card: 168 30% 11%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 168 30% 11%;
+    --popover-foreground: 0 0% 98%;
+
+    --primary: 168 75% 35%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 168 30% 15%;
+    --secondary-foreground: 0 0% 98%;
+
+    --muted: 168 30% 15%;
+    --muted-foreground: 150 15% 65%;
+
+    --accent: 168 75% 35%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 62% 30%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 168 30% 20%;
+    --input: 168 30% 20%;
+    --ring: 168 75% 35%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+}
+
+@layer utilities {
+  .gradient-primary {
+    background: var(--gradient-primary);
+  }
+
+  .gradient-accent {
+    background: var(--gradient-accent);
+  }
+
+  .gradient-progress {
+    background: var(--gradient-progress);
+    background-size: 200% 100%;
+    animation: shimmer 2s ease-in-out infinite;
+  }
+
+  .shadow-card {
+    box-shadow: var(--shadow-md);
+  }
+
+  .shadow-glow {
+    box-shadow: var(--shadow-glow);
+  }
+
+  .animate-float {
+    animation: float 3s ease-in-out infinite;
+  }
+
+  .animate-pulse-soft {
+    animation: pulse-soft 2s ease-in-out infinite;
+  }
+
+  .animate-slide-up {
+    animation: slide-up 0.5s ease-out forwards;
+  }
+
+  .animate-fade-in {
+    animation: fade-in 0.3s ease-out forwards;
+  }
+
+  .animate-scale-in {
+    animation: scale-in 0.4s ease-out forwards;
+  }
+
+  .animate-glow {
+    animation: glow 2s ease-in-out infinite;
+  }
+
+  .hover-lift {
+    @apply transition-all duration-300 hover:shadow-lg hover:-translate-y-1;
+  }
+
+  .hover-scale {
+    @apply transition-transform duration-200 hover:scale-105;
+  }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.8; }
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes glow {
+  0%, 100% { box-shadow: 0 0 10px hsl(168 75% 30% / 0.3); }
+  50% { box-shadow: 0 0 25px hsl(168 75% 30% / 0.6); }
+}
