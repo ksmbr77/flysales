@@ -3,12 +3,12 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { BarChart3 } from "lucide-react";
 
 const data = [
-  { day: "Jul", vendas: 68000 },
-  { day: "Ago", vendas: 81000 },
-  { day: "Set", vendas: 75000 },
-  { day: "Out", vendas: 89000 },
-  { day: "Nov", vendas: 85750 },
-  { day: "Dez", vendas: 42350 },
+  { day: "Jul", vendas: 22000 },
+  { day: "Ago", vendas: 28000 },
+  { day: "Set", vendas: 25000 },
+  { day: "Out", vendas: 32000 },
+  { day: "Nov", vendas: 45000 },
+  { day: "Dez", vendas: 18500 },
 ];
 
 export function SalesChart() {

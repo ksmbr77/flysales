@@ -7,7 +7,9 @@ import {
   Users,
   Kanban,
   X,
-  Rocket
+  Rocket,
+  Instagram,
+  Globe
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { NavLink, useLocation } from "react-router-dom";
@@ -98,17 +100,26 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
           </ul>
         </nav>
         
-        {/* Agency Badge */}
-        <div className="p-4 border-t border-sidebar-border">
-          <div className="p-4 rounded-xl bg-gradient-to-br from-sidebar-accent to-sidebar-primary/30 border border-sidebar-border">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center shadow-purple">
-                <Rocket className="w-4 h-4 text-primary-foreground" />
-              </div>
-              <span className="text-sm font-semibold">Marketing Digital</span>
-            </div>
-            <p className="text-xs text-sidebar-foreground/60">Impulsionando seu negócio</p>
-          </div>
+        {/* Links Externos */}
+        <div className="p-4 border-t border-sidebar-border space-y-2">
+          <a 
+            href="https://www.instagram.com/fly.agencyy/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-3 px-4 py-3 rounded-xl bg-sidebar-accent/50 hover:bg-sidebar-accent transition-all duration-200 group"
+          >
+            <Instagram className="w-5 h-5 text-pink-400" />
+            <span className="text-sm font-medium">@fly.agencyy</span>
+          </a>
+          <a 
+            href="https://flyagency.pro"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-3 px-4 py-3 rounded-xl bg-sidebar-accent/50 hover:bg-sidebar-accent transition-all duration-200 group"
+          >
+            <Globe className="w-5 h-5 text-primary" />
+            <span className="text-sm font-medium">flyagency.pro</span>
+          </a>
         </div>
       </aside>
     </>

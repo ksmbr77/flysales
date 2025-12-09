@@ -14,7 +14,7 @@ interface EditableStatCardProps {
     value: number;
     isPositive: boolean;
   };
-  variant?: "default" | "accent" | "success" | "warning";
+  variant?: "default" | "accent" | "warning";
   delay?: number;
   editable?: boolean;
   onValueChange?: (value: string) => void;
@@ -23,14 +23,12 @@ interface EditableStatCardProps {
 const variantStyles = {
   default: "bg-card",
   accent: "bg-primary text-primary-foreground",
-  success: "bg-success text-success-foreground",
   warning: "bg-warning text-warning-foreground",
 };
 
 const iconVariantStyles = {
   default: "bg-primary/10 text-primary",
   accent: "bg-primary-foreground/20 text-primary-foreground",
-  success: "bg-success-foreground/20 text-success-foreground",
   warning: "bg-warning-foreground/20 text-warning-foreground",
 };
 
@@ -101,7 +99,7 @@ export function EditableStatCard({
                 autoFocus
               />
               <Button size="icon" variant="ghost" className="h-7 w-7 md:h-8 md:w-8 shrink-0" onClick={handleSave}>
-                <Check className={cn("w-3 h-3 md:w-4 md:h-4", variant !== "default" ? "text-primary-foreground" : "text-success")} />
+                <Check className={cn("w-3 h-3 md:w-4 md:h-4", variant !== "default" ? "text-primary-foreground" : "text-primary")} />
               </Button>
               <Button size="icon" variant="ghost" className="h-7 w-7 md:h-8 md:w-8 shrink-0" onClick={handleCancel}>
                 <X className={cn("w-3 h-3 md:w-4 md:h-4", variant !== "default" ? "text-primary-foreground" : "text-destructive")} />
@@ -125,7 +123,7 @@ export function EditableStatCard({
             <div className={cn(
               "inline-flex items-center gap-1 text-xs md:text-sm font-medium px-2 py-0.5 md:py-1 rounded-full",
               trend.isPositive 
-                ? "bg-success/10 text-success" 
+                ? "bg-primary/10 text-primary" 
                 : "bg-destructive/10 text-destructive"
             )}>
               <span className="animate-pulse-soft">{trend.isPositive ? "↑" : "↓"}</span>

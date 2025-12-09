@@ -10,11 +10,10 @@ interface Servico {
 }
 
 const servicos: Servico[] = [
-  { position: 1, name: "Marketing 360°", contratos: 12, revenue: 48000, trend: 15 },
-  { position: 2, name: "Tráfego Pago", contratos: 18, revenue: 36000, trend: 22 },
-  { position: 3, name: "Social Media", contratos: 24, revenue: 28800, trend: 8 },
-  { position: 4, name: "Branding Completo", contratos: 6, revenue: 24000, trend: 12 },
-  { position: 5, name: "Identidade Visual", contratos: 15, revenue: 22500, trend: 5 },
+  { position: 1, name: "Marketing 360°", contratos: 8, revenue: 32000, trend: 18 },
+  { position: 2, name: "Gestão de Tráfego Pago", contratos: 15, revenue: 22500, trend: 25 },
+  { position: 3, name: "Funis de Vendas", contratos: 6, revenue: 18000, trend: 12 },
+  { position: 4, name: "Branding e Posicionamento", contratos: 4, revenue: 16000, trend: 8 },
 ];
 
 const positionColors: Record<number, string> = {
@@ -62,7 +61,7 @@ export function ProductRanking() {
               <p className="font-bold text-sm md:text-base text-foreground">
                 R$ {servico.revenue.toLocaleString('pt-BR')}
               </p>
-              <div className="flex items-center justify-end gap-1 text-success">
+              <div className="flex items-center justify-end gap-1 text-primary">
                 <TrendingUp className="w-3 h-3" />
                 <span className="text-[10px] md:text-xs font-medium">+{servico.trend}%</span>
               </div>
