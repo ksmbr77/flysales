@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { WhatsAppButton } from "@/components/dashboard/WhatsAppButton";
 import { 
   Kanban,
   DollarSign,
@@ -55,7 +56,7 @@ const CRM = () => {
           responsavel: "Gustavo Fontes",
           iniciais: "CS",
           dataContato: "05/12/2024",
-          servico: "Social Media"
+          servico: "Tráfego Pago"
         },
         {
           id: "2",
@@ -65,7 +66,7 @@ const CRM = () => {
           responsavel: "Davi Nascimento",
           iniciais: "AP",
           dataContato: "06/12/2024",
-          servico: "Tráfego Pago"
+          servico: "Funil de Vendas"
         }
       ]
     },
@@ -82,7 +83,7 @@ const CRM = () => {
           responsavel: "Gustavo Fontes",
           iniciais: "RM",
           dataContato: "03/12/2024",
-          servico: "Branding Completo"
+          servico: "Marketing 360"
         }
       ]
     },
@@ -99,7 +100,7 @@ const CRM = () => {
           responsavel: "Davi Nascimento",
           iniciais: "FL",
           dataContato: "01/12/2024",
-          servico: "Marketing 360"
+          servico: "Tráfego Pago"
         },
         {
           id: "5",
@@ -109,7 +110,7 @@ const CRM = () => {
           responsavel: "Gustavo Fontes",
           iniciais: "MO",
           dataContato: "02/12/2024",
-          servico: "Social Media"
+          servico: "Branding"
         }
       ]
     },
@@ -126,14 +127,14 @@ const CRM = () => {
           responsavel: "Davi Nascimento",
           iniciais: "JS",
           dataContato: "04/12/2024",
-          servico: "Identidade Visual"
+          servico: "Funil de Vendas"
         }
       ]
     },
     {
       id: "fechado",
       titulo: "Fechado ✅",
-      cor: "bg-success",
+      cor: "bg-primary",
       clientes: [
         {
           id: "7",
@@ -143,7 +144,7 @@ const CRM = () => {
           responsavel: "Gustavo Fontes",
           iniciais: "PC",
           dataContato: "28/11/2024",
-          servico: "Marketing Completo"
+          servico: "Marketing 360"
         },
         {
           id: "8",
@@ -153,7 +154,7 @@ const CRM = () => {
           responsavel: "Davi Nascimento",
           iniciais: "CR",
           dataContato: "29/11/2024",
-          servico: "E-commerce + Ads"
+          servico: "Tráfego Pago"
         }
       ]
     }
@@ -184,12 +185,10 @@ const CRM = () => {
     setColunas(prevColunas => {
       const newColunas = [...prevColunas];
       
-      // Find source column and client
       const sourceColIndex = newColunas.findIndex(c => c.id === draggedItem.colunaId);
       const clientIndex = newColunas[sourceColIndex].clientes.findIndex(c => c.id === draggedItem.clienteId);
       const [cliente] = newColunas[sourceColIndex].clientes.splice(clientIndex, 1);
       
-      // Find target column and add client
       const targetColIndex = newColunas.findIndex(c => c.id === targetColunaId);
       newColunas[targetColIndex].clientes.push(cliente);
       
@@ -240,13 +239,13 @@ const CRM = () => {
             <Card className="hover-lift">
               <CardContent className="p-4">
                 <p className="text-xs text-muted-foreground">Negócios Fechados</p>
-                <p className="text-xl font-bold text-success">{clientesFechados}</p>
+                <p className="text-xl font-bold text-primary">{clientesFechados}</p>
               </CardContent>
             </Card>
             <Card className="hover-lift">
               <CardContent className="p-4">
                 <p className="text-xs text-muted-foreground">Valor Fechado</p>
-                <p className="text-xl font-bold text-success">{formatCurrency(ticketFechado)}</p>
+                <p className="text-xl font-bold text-primary">{formatCurrency(ticketFechado)}</p>
               </CardContent>
             </Card>
           </div>
@@ -347,6 +346,8 @@ const CRM = () => {
           </div>
         </main>
       </div>
+
+      <WhatsAppButton />
     </div>
   );
 };

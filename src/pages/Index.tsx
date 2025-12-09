@@ -16,14 +16,14 @@ import { usePersistentState } from "@/hooks/usePersistentState";
 
 const Index = () => {
   const [salesData, setSalesData] = usePersistentState("fly-sales-data", {
-    vendas30dias: "R$ 85.750,00",
-    vendasMes: "R$ 42.350,00",
-    metaMensal: "R$ 100.000,00",
-    clientesAtivos: "27"
+    faturamento30dias: "R$ 45.000,00",
+    vendasMes: "R$ 18.500,00",
+    metaMensal: "R$ 30.000,00",
+    clientesAtivos: "12"
   });
 
-  const [currentSales, setCurrentSales] = usePersistentState("fly-current-sales", 42350);
-  const [goalValue, setGoalValue] = usePersistentState("fly-goal-value", 100000);
+  const [currentSales, setCurrentSales] = usePersistentState("fly-current-sales", 18500);
+  const [goalValue, setGoalValue] = usePersistentState("fly-goal-value", 30000);
 
   const percentage = ((currentSales / goalValue) * 100).toFixed(1);
 
@@ -39,13 +39,13 @@ const Index = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 md:gap-4 mb-4 md:mb-6">
             <EditableStatCard
               title="Faturamento 30 dias"
-              value={salesData.vendas30dias}
+              value={salesData.faturamento30dias}
               subtitle="Últimos 30 dias"
               icon={DollarSign}
               trend={{ value: 18.5, isPositive: true }}
               delay={0}
               editable
-              onValueChange={(value) => setSalesData(prev => ({ ...prev, vendas30dias: value }))}
+              onValueChange={(value) => setSalesData(prev => ({ ...prev, faturamento30dias: value }))}
             />
             <EditableStatCard
               title={`Vendas de ${getMesAtual().split(' ')[0].toLowerCase()}`}
@@ -66,7 +66,7 @@ const Index = () => {
               value={salesData.metaMensal}
               subtitle={`${percentage}% atingido`}
               icon={Target}
-              variant="success"
+              variant="accent"
               delay={200}
               editable
               onValueChange={(value) => {

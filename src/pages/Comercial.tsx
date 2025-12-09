@@ -4,13 +4,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { WhatsAppButton } from "@/components/dashboard/WhatsAppButton";
 import { 
   Target, 
   TrendingUp, 
   Award,
   DollarSign,
   Users,
-  Calendar,
   Phone,
   Mail
 } from "lucide-react";
@@ -31,30 +31,30 @@ interface Vendedor {
 }
 
 const Comercial = () => {
-  const [vendedores, setVendedores] = usePersistentState<Vendedor[]>("fly-vendedores", [
+  const [vendedores] = usePersistentState<Vendedor[]>("fly-vendedores", [
     {
       id: "1",
       nome: "Gustavo Fontes",
       iniciais: "GF",
-      email: "gustavo@flyagency.com",
+      email: "gustavo@flyagency.pro",
       telefone: "(11) 99999-1234",
       cor: "from-primary to-accent",
-      metaMensal: 50000,
-      vendasMes: 32500,
-      clientesAtivos: 12,
-      negociosFechados: 8
+      metaMensal: 15000,
+      vendasMes: 9800,
+      clientesAtivos: 6,
+      negociosFechados: 4
     },
     {
       id: "2",
       nome: "Davi Nascimento",
       iniciais: "DN",
-      email: "davi@flyagency.com",
+      email: "davi@flyagency.pro",
       telefone: "(11) 99999-5678",
       cor: "from-accent to-primary",
-      metaMensal: 50000,
-      vendasMes: 41200,
-      clientesAtivos: 15,
-      negociosFechados: 11
+      metaMensal: 15000,
+      vendasMes: 12200,
+      clientesAtivos: 8,
+      negociosFechados: 6
     }
   ]);
 
@@ -117,8 +117,8 @@ const Comercial = () => {
             <Card className="hover-lift">
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-success/20 flex items-center justify-center">
-                    <Users className="w-5 h-5 text-success" />
+                  <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center">
+                    <Users className="w-5 h-5 text-primary" />
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">Clientes Ativos</p>
@@ -242,6 +242,8 @@ const Comercial = () => {
           </div>
         </main>
       </div>
+
+      <WhatsAppButton />
     </div>
   );
 };

@@ -11,22 +11,20 @@ import { getMesAtual, getMesAnterior, getDiasRestantesMes } from "@/lib/dateUtil
 import { usePersistentState } from "@/hooks/usePersistentState";
 
 const Metas = () => {
-  const [currentSales, setCurrentSales] = usePersistentState("metas-currentSales", 20710.53);
-  const [goalValue, setGoalValue] = usePersistentState("metas-goalValue", 70000);
+  const [currentSales, setCurrentSales] = usePersistentState("fly-metas-currentSales", 18500);
+  const [goalValue, setGoalValue] = usePersistentState("fly-metas-goalValue", 30000);
   
-  // Histórico com datas dinâmicas baseadas no mês atual
-  const [historico, setHistorico] = usePersistentState("metas-historico", [
-    { mes: getMesAtual(), meta: 70000, atingido: 20710.53, percentual: 29.6 },
-    { mes: getMesAnterior(1), meta: 50000, atingido: 38358.22, percentual: 76.7 },
-    { mes: getMesAnterior(2), meta: 10000, atingido: 1481.12, percentual: 14.8 },
-    { mes: getMesAnterior(3), meta: 5000, atingido: 520.91, percentual: 10.4 },
-    { mes: getMesAnterior(4), meta: 5000, atingido: 0, percentual: 0 },
+  const [historico, setHistorico] = usePersistentState("fly-metas-historico", [
+    { mes: getMesAtual(), meta: 30000, atingido: 18500, percentual: 61.7 },
+    { mes: getMesAnterior(1), meta: 25000, atingido: 28500, percentual: 114 },
+    { mes: getMesAnterior(2), meta: 20000, atingido: 18200, percentual: 91 },
+    { mes: getMesAnterior(3), meta: 15000, atingido: 12800, percentual: 85.3 },
+    { mes: getMesAnterior(4), meta: 10000, atingido: 8500, percentual: 85 },
   ]);
 
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editValues, setEditValues] = useState({ meta: "", atingido: "" });
 
-  // Calcular dias restantes dinamicamente
   const daysRemaining = useMemo(() => getDiasRestantesMes(), []);
   
   const remaining = Math.max(0, goalValue - currentSales);
@@ -95,8 +93,8 @@ const Metas = () => {
 
             <Card className="p-4 md:p-6 shadow-card border-0 animate-scale-in hover-lift" style={{ animationDelay: '100ms' }}>
               <div className="flex items-center gap-3 md:gap-4">
-                <div className="p-2 md:p-3 rounded-xl bg-success/10">
-                  <TrendingUp className="w-5 h-5 md:w-6 md:h-6 text-success" />
+                <div className="p-2 md:p-3 rounded-xl bg-primary/10">
+                  <TrendingUp className="w-5 h-5 md:w-6 md:h-6 text-primary" />
                 </div>
                 <div>
                   <p className="text-xs md:text-sm text-muted-foreground">Média Diária Necessária</p>
@@ -155,7 +153,7 @@ const Metas = () => {
                           className="h-8 w-24 md:w-28"
                         />
                         <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => handleSaveEdit(index)}>
-                          <Check className="w-4 h-4 text-success" />
+                          <Check className="w-4 h-4 text-primary" />
                         </Button>
                         <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setEditingIndex(null)}>
                           <X className="w-4 h-4 text-destructive" />
@@ -175,7 +173,7 @@ const Metas = () => {
                           <p className="font-bold text-foreground">
                             R$ {item.atingido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                           </p>
-                          <p className={`text-sm font-medium ${item.percentual >= 100 ? 'text-success' : item.percentual >= 50 ? 'text-warning' : 'text-muted-foreground'}`}>
+                          <p className={`text-sm font-medium ${item.percentual >= 100 ? 'text-primary' : item.percentual >= 50 ? 'text-warning' : 'text-muted-foreground'}`}>
                             {item.percentual >= 100 ? '✓ ' : ''}{item.percentual.toFixed(1)}% atingido
                           </p>
                         </div>

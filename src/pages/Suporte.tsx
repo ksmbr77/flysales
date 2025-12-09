@@ -6,77 +6,78 @@ import {
   Lightbulb, 
   Target, 
   DollarSign, 
-  Building2, 
-  ClipboardList, 
+  Megaphone, 
   TrendingUp,
-  CheckCircle2
+  CheckCircle2,
+  Rocket,
+  Users
 } from "lucide-react";
 
 const tipCategories = [
   {
-    icon: ClipboardList,
-    title: "Organização",
+    icon: Megaphone,
+    title: "Tráfego Pago",
     color: "primary",
     tips: [
-      "Mantenha um controle diário do estoque",
-      "Use planilhas para acompanhar pedidos pendentes",
-      "Organize produtos por categoria e giro de vendas",
-      "Defina horários fixos para responder mensagens"
+      "Defina públicos específicos para cada campanha",
+      "Teste diferentes criativos semanalmente",
+      "Monitore o CPA e ROAS diariamente",
+      "Use remarketing para leads quentes"
     ]
   },
   {
     icon: TrendingUp,
-    title: "Vendas",
-    color: "success",
+    title: "Funis de Vendas",
+    color: "accent",
     tips: [
-      "Responda clientes em até 5 minutos",
-      "Ofereça combos e kits promocionais",
-      "Destaque avaliações positivas no anúncio",
-      "Mantenha fotos atualizadas e de qualidade"
+      "Crie páginas de captura otimizadas",
+      "Automatize o follow-up de leads",
+      "Segmente leads por temperatura",
+      "Acompanhe métricas de conversão"
     ]
   },
   {
     icon: DollarSign,
-    title: "Financeiro",
+    title: "Gestão Financeira",
     color: "warning",
     tips: [
       "Separe conta pessoal da empresarial",
       "Reserve 30% do lucro para impostos",
       "Controle o fluxo de caixa semanalmente",
-      "Calcule o custo real de cada produto"
+      "Defina preços com margem adequada"
     ]
   },
   {
     icon: Target,
-    title: "Metas",
-    color: "accent",
+    title: "Metas e OKRs",
+    color: "primary",
     tips: [
       "Defina metas mensais realistas",
-      "Divida a meta mensal em diária",
+      "Divida a meta mensal em semanal",
       "Acompanhe o progresso diariamente",
       "Celebre cada conquista alcançada"
     ]
   },
   {
-    icon: Building2,
-    title: "Gestão Empresarial",
-    color: "info",
+    icon: Users,
+    title: "Atendimento ao Cliente",
+    color: "accent",
     tips: [
-      "Formalize seu negócio (MEI ou ME)",
-      "Invista em capacitação constante",
-      "Construa relacionamento com fornecedores",
-      "Planeje expansão gradual e sustentável"
+      "Responda em até 2 horas úteis",
+      "Use templates para agilizar respostas",
+      "Faça follow-up proativo",
+      "Peça feedback após entregas"
     ]
   },
   {
-    icon: Lightbulb,
-    title: "Dicas Gerais",
+    icon: Rocket,
+    title: "Marketing 360°",
     color: "primary",
     tips: [
-      "Mantenha-se atualizado sobre o mercado",
-      "Peça feedback aos clientes",
-      "Analise a concorrência regularmente",
-      "Automatize tarefas repetitivas"
+      "Integre todas as estratégias digitais",
+      "Mantenha consistência na comunicação",
+      "Analise dados de todas as fontes",
+      "Otimize baseado em resultados"
     ]
   }
 ];
@@ -84,10 +85,8 @@ const tipCategories = [
 const getColorClasses = (color: string) => {
   const colors: Record<string, { bg: string; text: string }> = {
     primary: { bg: "bg-primary/10", text: "text-primary" },
-    success: { bg: "bg-success/10", text: "text-success" },
-    warning: { bg: "bg-warning/10", text: "text-warning" },
     accent: { bg: "bg-accent/10", text: "text-accent" },
-    info: { bg: "bg-blue-500/10", text: "text-blue-500" }
+    warning: { bg: "bg-warning/10", text: "text-warning" },
   };
   return colors[color] || colors.primary;
 };
@@ -102,8 +101,8 @@ const Suporte = () => {
         
         <main className="p-4 md:p-6">
           <div className="mb-6">
-            <h2 className="text-xl md:text-2xl font-bold text-foreground mb-1">Suporte ao Vendedor</h2>
-            <p className="text-sm md:text-base text-muted-foreground">Dicas práticas para melhorar sua gestão e vendas</p>
+            <h2 className="text-xl md:text-2xl font-bold text-foreground mb-1">Central de Conhecimento</h2>
+            <p className="text-sm md:text-base text-muted-foreground">Dicas práticas para melhorar sua gestão e resultados</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
@@ -139,7 +138,7 @@ const Suporte = () => {
           </div>
 
           {/* Quick Tips Banner */}
-          <Card className="mt-6 p-4 md:p-6 bg-gradient-to-r from-primary/10 via-accent/10 to-success/10 border-0 shadow-card">
+          <Card className="mt-6 p-4 md:p-6 bg-gradient-to-r from-primary/10 via-accent/10 to-primary/5 border-0 shadow-card">
             <div className="flex items-start gap-4">
               <div className="p-3 rounded-xl bg-primary/20">
                 <Lightbulb className="w-6 h-6 text-primary" />
@@ -148,7 +147,7 @@ const Suporte = () => {
                 <h4 className="font-semibold text-lg mb-2">Dica do Dia</h4>
                 <p className="text-muted-foreground">
                   Clientes satisfeitos são sua melhor propaganda. Invista em um atendimento excepcional 
-                  e veja suas avaliações e vendas crescerem naturalmente!
+                  e resultados consistentes para criar cases de sucesso que atraem novos clientes!
                 </p>
               </div>
             </div>
