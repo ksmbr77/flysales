@@ -1,19 +1,22 @@
-import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { 
   LayoutDashboard, 
   Target, 
   TrendingUp,
   HelpCircle,
-  ExternalLink,
-  X
+  Users,
+  Kanban,
+  X,
+  Rocket
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { NavLink, useLocation } from "react-router-dom";
-import logoFortlar from "@/assets/logo-fortlar.png";
+import logoFly from "@/assets/logo-fly.png";
 
 const menuItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/" },
+  { icon: Users, label: "Comercial", path: "/comercial" },
+  { icon: Kanban, label: "CRM", path: "/crm" },
   { icon: Target, label: "Metas", path: "/metas" },
   { icon: TrendingUp, label: "Relatórios", path: "/relatorios" },
   { icon: HelpCircle, label: "Suporte", path: "/suporte" },
@@ -44,12 +47,15 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
         {/* Logo */}
         <div className="p-6 border-b border-sidebar-border flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl bg-white p-1 flex items-center justify-center shadow-md">
-              <img src={logoFortlar} alt="Fortlar Têxtil" className="w-full h-full object-contain" />
+            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 p-1 flex items-center justify-center shadow-lg">
+              <img src={logoFly} alt="Fly Agency" className="w-full h-full object-contain" />
             </div>
             <div>
-              <h2 className="font-bold text-lg tracking-tight">Fortlar</h2>
-              <p className="text-xs text-sidebar-foreground/60">Têxtil</p>
+              <h2 className="font-bold text-lg tracking-tight">Fly Agency</h2>
+              <p className="text-xs text-sidebar-foreground/60 flex items-center gap-1">
+                <Rocket className="w-3 h-3" />
+                Digital
+              </p>
             </div>
           </div>
           <Button
@@ -92,25 +98,17 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
           </ul>
         </nav>
         
-        {/* Shopee Badge */}
+        {/* Agency Badge */}
         <div className="p-4 border-t border-sidebar-border">
-          <a 
-            href="https://shopee.com.br/fortlartextil?entryPoint=ShopBySearch&searchKeyword=fortlar%20textil"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="block p-4 rounded-xl bg-sidebar-accent hover:bg-sidebar-primary/50 transition-all duration-300 hover-lift group"
-          >
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded bg-orange-500 flex items-center justify-center">
-                  <span className="text-white text-xs font-bold">S</span>
-                </div>
-                <span className="text-sm font-medium">Loja Shopee</span>
+          <div className="p-4 rounded-xl bg-gradient-to-br from-sidebar-accent to-sidebar-primary/30 border border-sidebar-border">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center shadow-purple">
+                <Rocket className="w-4 h-4 text-primary-foreground" />
               </div>
-              <ExternalLink className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+              <span className="text-sm font-semibold">Marketing Digital</span>
             </div>
-            <p className="text-xs text-sidebar-foreground/60">fortlartextil</p>
-          </a>
+            <p className="text-xs text-sidebar-foreground/60">Impulsionando seu negócio</p>
+          </div>
         </div>
       </aside>
     </>

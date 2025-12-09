@@ -3,11 +3,12 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { BarChart3 } from "lucide-react";
 
 const data = [
-  { day: "Ago", vendas: 0 },
-  { day: "Set", vendas: 520.91 },
-  { day: "Out", vendas: 1481.12 },
-  { day: "Nov", vendas: 38358.22 },
-  { day: "Dez", vendas: 20710.53 },
+  { day: "Jul", vendas: 68000 },
+  { day: "Ago", vendas: 81000 },
+  { day: "Set", vendas: 75000 },
+  { day: "Out", vendas: 89000 },
+  { day: "Nov", vendas: 85750 },
+  { day: "Dez", vendas: 42350 },
 ];
 
 export function SalesChart() {
@@ -18,8 +19,8 @@ export function SalesChart() {
           <BarChart3 className="w-4 h-4 md:w-5 md:h-5 text-primary" />
         </div>
         <div>
-          <h3 className="font-semibold text-base md:text-lg">Evolução de Vendas</h3>
-          <p className="text-xs md:text-sm text-muted-foreground">Histórico 2024</p>
+          <h3 className="font-semibold text-base md:text-lg">Faturamento Mensal</h3>
+          <p className="text-xs md:text-sm text-muted-foreground">Últimos 6 meses</p>
         </div>
       </div>
       
@@ -51,7 +52,7 @@ export function SalesChart() {
                 borderRadius: '12px',
               }}
               labelStyle={{ color: 'hsl(var(--foreground))' }}
-              formatter={(value: number) => [`R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, 'Vendas']}
+              formatter={(value: number) => [`R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, 'Faturamento']}
               cursor={{ fill: 'hsl(var(--primary) / 0.1)' }}
             />
             <Bar 

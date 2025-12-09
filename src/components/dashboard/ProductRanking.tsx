@@ -1,25 +1,26 @@
 import { Card } from "@/components/ui/card";
-import { Trophy, TrendingUp, ExternalLink } from "lucide-react";
+import { Trophy, TrendingUp } from "lucide-react";
 
-interface Product {
+interface Servico {
   position: number;
   name: string;
-  sales: number;
+  contratos: number;
   revenue: number;
+  trend: number;
 }
 
-const products: Product[] = [
-  { position: 1, name: "Jogo de Lençol Infantil do Homem Aranha", sales: 597, revenue: 24232.15 },
-  { position: 2, name: "Jogo de Lençol Infantil com Fronha", sales: 416, revenue: 18168.28 },
-  { position: 3, name: "Jogo de Lençol Infantil Do Stitch", sales: 120, revenue: 5237.28 },
-  { position: 4, name: "Jogo De Lençol Com Elástico 3Pçs", sales: 71, revenue: 2556.33 },
-  { position: 5, name: "Jogo de Lençol Infantil da Barbie", sales: 27, revenue: 1010.85 },
+const servicos: Servico[] = [
+  { position: 1, name: "Marketing 360°", contratos: 12, revenue: 48000, trend: 15 },
+  { position: 2, name: "Tráfego Pago", contratos: 18, revenue: 36000, trend: 22 },
+  { position: 3, name: "Social Media", contratos: 24, revenue: 28800, trend: 8 },
+  { position: 4, name: "Branding Completo", contratos: 6, revenue: 24000, trend: 12 },
+  { position: 5, name: "Identidade Visual", contratos: 15, revenue: 22500, trend: 5 },
 ];
 
 const positionColors: Record<number, string> = {
-  1: "bg-yellow-500 shadow-yellow-500/30",
-  2: "bg-gray-400 shadow-gray-400/30",
-  3: "bg-amber-600 shadow-amber-600/30",
+  1: "gradient-primary shadow-purple",
+  2: "bg-accent/80 shadow-purple",
+  3: "bg-warning shadow-warning/30",
 };
 
 export function ProductRanking() {
@@ -31,53 +32,42 @@ export function ProductRanking() {
             <Trophy className="w-4 h-4 md:w-5 md:h-5 text-primary" />
           </div>
           <div>
-            <h3 className="font-semibold text-base md:text-lg">Ranking de Produtos</h3>
-            <p className="text-xs md:text-sm text-muted-foreground">Últimos 30 dias</p>
+            <h3 className="font-semibold text-base md:text-lg">Ranking de Serviços</h3>
+            <p className="text-xs md:text-sm text-muted-foreground">Por faturamento</p>
           </div>
         </div>
-        <a 
-          href="https://shopee.com.br/fortlartextil"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-xs md:text-sm text-primary hover:underline flex items-center gap-1"
-        >
-          Ver loja <ExternalLink className="w-3 h-3" />
-        </a>
       </div>
       
       <div className="space-y-2 md:space-y-3">
-        {products.map((product, index) => (
-          <a
-            key={product.position}
-            href="https://shopee.com.br/fortlartextil"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-2 md:gap-4 p-3 md:p-4 rounded-xl bg-secondary/50 hover:bg-secondary transition-all duration-300 cursor-pointer group animate-slide-up opacity-0"
+        {servicos.map((servico, index) => (
+          <div
+            key={servico.position}
+            className="flex items-center gap-2 md:gap-4 p-3 md:p-4 rounded-xl bg-secondary/50 hover:bg-secondary transition-all duration-300 animate-slide-up opacity-0"
             style={{ animationDelay: `${300 + index * 100}ms`, animationFillMode: 'forwards' }}
           >
-            <div className={`w-6 h-6 md:w-8 md:h-8 rounded-full flex items-center justify-center text-xs md:text-sm font-bold text-white shadow-lg shrink-0 ${positionColors[product.position] || "bg-muted-foreground"}`}>
-              {product.position}
+            <div className={`w-6 h-6 md:w-8 md:h-8 rounded-full flex items-center justify-center text-xs md:text-sm font-bold text-primary-foreground shrink-0 ${positionColors[servico.position] || "bg-muted-foreground"}`}>
+              {servico.position}
             </div>
             
             <div className="flex-1 min-w-0">
-              <p className="font-medium text-sm md:text-base text-foreground truncate group-hover:text-primary transition-colors">
-                {product.name}
+              <p className="font-medium text-sm md:text-base text-foreground truncate">
+                {servico.name}
               </p>
               <p className="text-xs md:text-sm text-muted-foreground">
-                {product.sales} vendas
+                {servico.contratos} contratos
               </p>
             </div>
             
             <div className="text-right shrink-0">
               <p className="font-bold text-sm md:text-base text-foreground">
-                R$ {product.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                R$ {servico.revenue.toLocaleString('pt-BR')}
               </p>
               <div className="flex items-center justify-end gap-1 text-success">
                 <TrendingUp className="w-3 h-3" />
-                <span className="text-[10px] md:text-xs font-medium">Ativo</span>
+                <span className="text-[10px] md:text-xs font-medium">+{servico.trend}%</span>
               </div>
             </div>
-          </a>
+          </div>
         ))}
       </div>
     </Card>

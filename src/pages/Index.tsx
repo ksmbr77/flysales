@@ -6,24 +6,24 @@ import { ProductRanking } from "@/components/dashboard/ProductRanking";
 import { SalesChart } from "@/components/dashboard/SalesChart";
 import { WhatsAppButton } from "@/components/dashboard/WhatsAppButton";
 import { 
-  ShoppingBag, 
+  DollarSign, 
   Target, 
   TrendingUp, 
-  Package 
+  Users 
 } from "lucide-react";
 import { getMesAtual } from "@/lib/dateUtils";
 import { usePersistentState } from "@/hooks/usePersistentState";
 
 const Index = () => {
-  const [salesData, setSalesData] = usePersistentState("fortlar-sales-data", {
-    vendas30dias: "R$ 57.516,83",
-    vendasMes: "R$ 20.710,53",
-    metaMensal: "R$ 70.000,00",
-    produtosAtivos: "16"
+  const [salesData, setSalesData] = usePersistentState("fly-sales-data", {
+    vendas30dias: "R$ 85.750,00",
+    vendasMes: "R$ 42.350,00",
+    metaMensal: "R$ 100.000,00",
+    clientesAtivos: "27"
   });
 
-  const [currentSales, setCurrentSales] = usePersistentState("fortlar-current-sales", 20710.53);
-  const [goalValue, setGoalValue] = usePersistentState("fortlar-goal-value", 70000);
+  const [currentSales, setCurrentSales] = usePersistentState("fly-current-sales", 42350);
+  const [goalValue, setGoalValue] = usePersistentState("fly-goal-value", 100000);
 
   const percentage = ((currentSales / goalValue) * 100).toFixed(1);
 
@@ -38,11 +38,11 @@ const Index = () => {
           {/* Stats Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 md:gap-4 mb-4 md:mb-6">
             <EditableStatCard
-              title="Vendas 30 dias"
+              title="Faturamento 30 dias"
               value={salesData.vendas30dias}
               subtitle="Últimos 30 dias"
-              icon={ShoppingBag}
-              trend={{ value: 12.5, isPositive: true }}
+              icon={DollarSign}
+              trend={{ value: 18.5, isPositive: true }}
               delay={0}
               editable
               onValueChange={(value) => setSalesData(prev => ({ ...prev, vendas30dias: value }))}
@@ -76,13 +76,13 @@ const Index = () => {
               }}
             />
             <EditableStatCard
-              title="Produtos Ativos"
-              value={salesData.produtosAtivos}
-              subtitle="Na loja Shopee"
-              icon={Package}
+              title="Clientes Ativos"
+              value={salesData.clientesAtivos}
+              subtitle="Em contratos vigentes"
+              icon={Users}
               delay={300}
               editable
-              onValueChange={(value) => setSalesData(prev => ({ ...prev, produtosAtivos: value }))}
+              onValueChange={(value) => setSalesData(prev => ({ ...prev, clientesAtivos: value }))}
             />
           </div>
           
