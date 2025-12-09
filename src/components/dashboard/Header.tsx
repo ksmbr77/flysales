@@ -32,7 +32,7 @@ export function Header() {
             </Button>
             <div className="min-w-0">
               <h1 className="text-lg md:text-2xl font-bold text-foreground truncate">
-                Olá, Fortlar! 👋
+                Olá, Fly Agency! 🚀
               </h1>
               <p className="text-xs md:text-sm text-muted-foreground capitalize truncate">{currentDate}</p>
             </div>

@@ -2,29 +2,29 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
 
 @layer base {
   :root {
-    --background: 140 20% 97%;
-    --foreground: 150 30% 10%;
+    --background: 270 15% 98%;
+    --foreground: 270 30% 10%;
 
     --card: 0 0% 100%;
-    --card-foreground: 150 30% 10%;
+    --card-foreground: 270 30% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 150 30% 10%;
+    --popover-foreground: 270 30% 10%;
 
-    --primary: 168 60% 25%;
+    --primary: 270 70% 50%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 140 14% 94%;
-    --secondary-foreground: 150 30% 10%;
+    --secondary: 270 20% 94%;
+    --secondary-foreground: 270 30% 10%;
 
-    --muted: 140 14% 94%;
-    --muted-foreground: 150 10% 45%;
+    --muted: 270 15% 94%;
+    --muted-foreground: 270 10% 45%;
 
-    --accent: 168 75% 30%;
+    --accent: 280 80% 55%;
     --accent-foreground: 0 0% 100%;
 
     --success: 142 71% 45%;
@@ -36,60 +36,71 @@
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 140 13% 88%;
-    --input: 140 13% 88%;
-    --ring: 168 60% 25%;
+    --border: 270 15% 88%;
+    --input: 270 15% 88%;
+    --ring: 270 70% 50%;
 
     --radius: 0.75rem;
 
-    --gradient-primary: linear-gradient(135deg, hsl(168 60% 25%) 0%, hsl(168 60% 35%) 100%);
-    --gradient-accent: linear-gradient(135deg, hsl(168 75% 30%) 0%, hsl(168 75% 40%) 100%);
-    --gradient-card: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(140 20% 98%) 100%);
-    --gradient-progress: linear-gradient(90deg, hsl(168 60% 25%) 0%, hsl(142 71% 45%) 50%, hsl(168 75% 35%) 100%);
+    --gradient-primary: linear-gradient(135deg, hsl(270 70% 45%) 0%, hsl(280 80% 55%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(280 80% 55%) 0%, hsl(290 75% 60%) 100%);
+    --gradient-card: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(270 20% 98%) 100%);
+    --gradient-progress: linear-gradient(90deg, hsl(270 70% 45%) 0%, hsl(280 80% 55%) 50%, hsl(290 75% 60%) 100%);
+    --gradient-hero: linear-gradient(135deg, hsl(270 70% 25%) 0%, hsl(280 60% 35%) 50%, hsl(270 50% 20%) 100%);
 
-    --shadow-sm: 0 1px 2px 0 hsl(150 30% 10% / 0.05);
-    --shadow-md: 0 4px 6px -1px hsl(150 30% 10% / 0.1), 0 2px 4px -2px hsl(150 30% 10% / 0.1);
-    --shadow-lg: 0 10px 15px -3px hsl(150 30% 10% / 0.1), 0 4px 6px -4px hsl(150 30% 10% / 0.1);
-    --shadow-glow: 0 0 20px hsl(168 75% 30% / 0.4);
+    --shadow-sm: 0 1px 2px 0 hsl(270 30% 10% / 0.05);
+    --shadow-md: 0 4px 6px -1px hsl(270 30% 10% / 0.1), 0 2px 4px -2px hsl(270 30% 10% / 0.1);
+    --shadow-lg: 0 10px 15px -3px hsl(270 30% 10% / 0.1), 0 4px 6px -4px hsl(270 30% 10% / 0.1);
+    --shadow-glow: 0 0 20px hsl(270 70% 50% / 0.4);
+    --shadow-purple: 0 4px 20px hsl(270 70% 50% / 0.25);
 
-    --sidebar-background: 168 60% 20%;
+    --sidebar-background: 270 50% 15%;
     --sidebar-foreground: 0 0% 100%;
-    --sidebar-primary: 168 75% 35%;
+    --sidebar-primary: 270 70% 55%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 168 60% 28%;
+    --sidebar-accent: 270 50% 22%;
     --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 168 60% 25%;
-    --sidebar-ring: 168 75% 35%;
+    --sidebar-border: 270 50% 20%;
+    --sidebar-ring: 270 70% 55%;
   }
 
   .dark {
-    --background: 168 30% 8%;
+    --background: 270 30% 8%;
     --foreground: 0 0% 98%;
 
-    --card: 168 30% 11%;
+    --card: 270 30% 12%;
     --card-foreground: 0 0% 98%;
 
-    --popover: 168 30% 11%;
+    --popover: 270 30% 12%;
     --popover-foreground: 0 0% 98%;
 
-    --primary: 168 75% 35%;
+    --primary: 270 75% 60%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 168 30% 15%;
+    --secondary: 270 30% 18%;
     --secondary-foreground: 0 0% 98%;
 
-    --muted: 168 30% 15%;
-    --muted-foreground: 150 15% 65%;
+    --muted: 270 30% 18%;
+    --muted-foreground: 270 15% 65%;
 
-    --accent: 168 75% 35%;
+    --accent: 280 80% 60%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 62% 30%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 168 30% 20%;
-    --input: 168 30% 20%;
-    --ring: 168 75% 35%;
+    --border: 270 30% 22%;
+    --input: 270 30% 22%;
+    --ring: 270 75% 60%;
+
+    --sidebar-background: 270 40% 10%;
+    --sidebar-foreground: 0 0% 100%;
+    --sidebar-primary: 270 70% 55%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 270 40% 18%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 270 40% 15%;
+    --sidebar-ring: 270 70% 55%;
   }
 }
 
@@ -100,7 +111,11 @@
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
-    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Space Grotesk', system-ui, sans-serif;
   }
 }
 
@@ -119,12 +134,20 @@
     animation: shimmer 2s ease-in-out infinite;
   }
 
+  .gradient-hero {
+    background: var(--gradient-hero);
+  }
+
   .shadow-card {
     box-shadow: var(--shadow-md);
   }
 
   .shadow-glow {
     box-shadow: var(--shadow-glow);
+  }
+
+  .shadow-purple {
+    box-shadow: var(--shadow-purple);
   }
 
   .animate-float {
@@ -157,6 +180,14 @@
 
   .hover-scale {
     @apply transition-transform duration-200 hover:scale-105;
+  }
+
+  .glass {
+    @apply bg-card/80 backdrop-blur-sm;
+  }
+
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent;
   }
 }
 
@@ -191,6 +222,25 @@
 }
 
 @keyframes glow {
-  0%, 100% { box-shadow: 0 0 10px hsl(168 75% 30% / 0.3); }
-  50% { box-shadow: 0 0 25px hsl(168 75% 30% / 0.6); }
+  0%, 100% { box-shadow: 0 0 10px hsl(270 70% 50% / 0.3); }
+  50% { box-shadow: 0 0 25px hsl(270 70% 50% / 0.6); }
+}
+
+/* Kanban scrollbar styling */
+.kanban-scroll::-webkit-scrollbar {
+  height: 8px;
+}
+
+.kanban-scroll::-webkit-scrollbar-track {
+  background: hsl(var(--muted));
+  border-radius: 4px;
+}
+
+.kanban-scroll::-webkit-scrollbar-thumb {
+  background: hsl(var(--primary) / 0.3);
+  border-radius: 4px;
+}
+
+.kanban-scroll::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--primary) / 0.5);
 }
