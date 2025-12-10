@@ -1,4 +1,4 @@
-import { Bell, Lightbulb, Rocket, Sparkles, Target, TrendingUp, Star, Zap, Heart, Award, Gift, Sun, Moon, Coffee, Flame } from "lucide-react";
+import { Bell, Lightbulb, Rocket, Sparkles, Target, TrendingUp, Star, Zap, Heart, Award, Gift, Sun, Coffee, Flame } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -7,49 +7,49 @@ import {
 } from "@/components/ui/popover";
 import { useMemo } from "react";
 
-// Pool de notificações por categoria
+// Pool de notificações por categoria - Fly Agency foco em vendas de marketing
 const welcomeMessages = [
-  { title: "Bom dia, Fortlar! ☀️", message: "Que hoje seja um dia de muitas vendas e conquistas!" },
-  { title: "Olá, Campeão! 🏆", message: "Mais um dia para brilhar na Shopee. Vamos nessa!" },
-  { title: "Seja bem-vindo! 🌟", message: "A Fortlar Têxtil está pronta para mais um dia de sucesso!" },
-  { title: "Bom dia, Vendedor! 💪", message: "Cada dia é uma nova oportunidade de superar suas metas!" },
-  { title: "Olá, Fortlar! 🚀", message: "Prepare-se para decolar nas vendas hoje!" },
-  { title: "Bem-vindo de volta! ✨", message: "Sua dedicação está fazendo a diferença!" },
-  { title: "Bom dia, Sucesso! 🎯", message: "Hoje é dia de bater recordes. Vamos lá!" },
+  { title: "Bom dia, Fly Agency!", message: "Que hoje seja um dia de muitas vendas e conquistas!" },
+  { title: "Olá, Campeão!", message: "Mais um dia para conquistar novos clientes. Vamos nessa!" },
+  { title: "Seja bem-vindo!", message: "A Fly Agency está pronta para mais um dia de sucesso!" },
+  { title: "Bom dia, Vendedor!", message: "Cada dia é uma nova oportunidade de fechar negócios!" },
+  { title: "Olá, Fly Agency!", message: "Prepare-se para decolar nas vendas hoje!" },
+  { title: "Bem-vindo de volta!", message: "Sua dedicação está fazendo a diferença!" },
+  { title: "Bom dia, Sucesso!", message: "Hoje é dia de bater recordes. Vamos lá!" },
 ];
 
 const tipMessages = [
-  { title: "Dica de Ouro 💡", message: "Responda os clientes em até 5 minutos e aumente suas conversões em 40%!" },
-  { title: "Segredo do Sucesso 🔑", message: "Fotos com fundo branco vendem até 35% mais na Shopee!" },
-  { title: "Estratégia Vencedora 📊", message: "Produtos com 5+ fotos têm 2x mais chances de venda!" },
-  { title: "Truque de Mestre 🎓", message: "Use palavras-chave no título para aparecer mais nas buscas!" },
-  { title: "Dica Premium ⭐", message: "Ofertas relâmpago geram até 5x mais visibilidade!" },
-  { title: "Hack de Vendas 💡", message: "Frete grátis acima de R$50 aumenta o ticket médio em 25%!" },
-  { title: "Insight Valioso 🧠", message: "Clientes que deixam avaliação têm 70% mais chance de recomprar!" },
-  { title: "Dica do Expert 🎯", message: "Atualize seus anúncios semanalmente para melhor ranqueamento!" },
-  { title: "Segredo Revelado 🔓", message: "Vídeos curtos nos produtos aumentam vendas em até 50%!" },
-  { title: "Tática Infalível 💪", message: "Cupons de desconto para primeira compra fidelizam clientes!" },
+  { title: "Dica de Ouro", message: "Responda os leads em até 5 minutos e aumente suas conversões em 40%!" },
+  { title: "Segredo do Sucesso", message: "Qualifique bem os leads para aumentar a taxa de fechamento!" },
+  { title: "Estratégia Vencedora", message: "Apresentações personalizadas convertem até 2x mais!" },
+  { title: "Truque de Mestre", message: "Use cases de sucesso para gerar confiança nos prospects!" },
+  { title: "Dica Premium", message: "Follow-up consistente é a chave para fechar mais negócios!" },
+  { title: "Hack de Vendas", message: "Entenda as dores do cliente antes de apresentar soluções!" },
+  { title: "Insight Valioso", message: "Clientes indicados têm 4x mais chance de fechar!" },
+  { title: "Dica do Expert", message: "Reuniões com decisores aumentam a taxa de conversão!" },
+  { title: "Segredo Revelado", message: "Propostas enviadas em até 24h têm mais chances de sucesso!" },
+  { title: "Tática Infalível", message: "Mostre ROI claro e aumente suas vendas!" },
 ];
 
 const motivationMessages = [
-  { title: "Você é Incrível! 🚀", message: "Cada venda é um passo rumo ao seu objetivo. Continue firme!" },
-  { title: "Rumo ao Topo! 🏔️", message: "Grandes conquistas começam com pequenos passos diários!" },
-  { title: "Você Consegue! 💪", message: "Sua meta está mais perto do que você imagina. Acredite!" },
-  { title: "Campeão em Ação! 🏆", message: "Os melhores vendedores são os que nunca desistem!" },
-  { title: "Energia Total! ⚡", message: "Transforme cada desafio em uma oportunidade de crescer!" },
-  { title: "Foco no Objetivo! 🎯", message: "Persistência é a chave. Você está no caminho certo!" },
-  { title: "Brilhe Hoje! ✨", message: "Seu potencial é ilimitado. Mostre do que é capaz!" },
-  { title: "Sucesso Garantido! 🌟", message: "Quem trabalha com paixão sempre colhe resultados!" },
-  { title: "Vai com Tudo! 🔥", message: "Hoje é seu dia de fazer história nas vendas!" },
-  { title: "Você é Top! 👑", message: "Os números não mentem: você está evoluindo a cada dia!" },
+  { title: "Você é Incrível!", message: "Cada reunião é um passo rumo à meta. Continue firme!" },
+  { title: "Rumo ao Topo!", message: "Grandes conquistas começam com pequenos passos diários!" },
+  { title: "Você Consegue!", message: "Sua meta está mais perto do que você imagina. Acredite!" },
+  { title: "Campeão em Ação!", message: "Os melhores vendedores são os que nunca desistem!" },
+  { title: "Energia Total!", message: "Transforme cada desafio em uma oportunidade de crescer!" },
+  { title: "Foco no Objetivo!", message: "Persistência é a chave. Você está no caminho certo!" },
+  { title: "Brilhe Hoje!", message: "Seu potencial é ilimitado. Mostre do que é capaz!" },
+  { title: "Sucesso Garantido!", message: "Quem trabalha com paixão sempre colhe resultados!" },
+  { title: "Vai com Tudo!", message: "Hoje é seu dia de fazer história nas vendas!" },
+  { title: "Você é Top!", message: "Os números não mentem: você está evoluindo a cada dia!" },
 ];
 
 const celebrationMessages = [
-  { title: "Parabéns! 🎉", message: "Suas vendas estão crescendo! Continue nesse ritmo!" },
-  { title: "Que Orgulho! 🎊", message: "A Fortlar Têxtil está fazendo história na Shopee!" },
-  { title: "Conquista Desbloqueada! 🏅", message: "Você está superando as expectativas. Incrível!" },
-  { title: "Recorde à Vista! 📈", message: "Seu desempenho está melhor a cada mês!" },
-  { title: "Sucesso Total! 💯", message: "Você está provando que dedicação traz resultados!" },
+  { title: "Parabéns!", message: "Suas vendas estão crescendo! Continue nesse ritmo!" },
+  { title: "Que Orgulho!", message: "A Fly Agency está conquistando o mercado!" },
+  { title: "Conquista Desbloqueada!", message: "Você está superando as expectativas. Incrível!" },
+  { title: "Recorde à Vista!", message: "Seu desempenho está melhor a cada mês!" },
+  { title: "Sucesso Total!", message: "Você está provando que dedicação traz resultados!" },
 ];
 
 // Função para obter seed baseada na data (muda a cada dia)

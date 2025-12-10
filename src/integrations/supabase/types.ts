@@ -14,7 +14,197 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      crm_clientes: {
+        Row: {
+          coluna_id: string
+          created_at: string
+          data_contato: string | null
+          email: string | null
+          empresa: string
+          id: string
+          iniciais: string | null
+          nome: string
+          observacoes: string | null
+          responsavel: string | null
+          servico: string | null
+          telefone: string | null
+          ticket: number | null
+          updated_at: string
+        }
+        Insert: {
+          coluna_id: string
+          created_at?: string
+          data_contato?: string | null
+          email?: string | null
+          empresa: string
+          id?: string
+          iniciais?: string | null
+          nome: string
+          observacoes?: string | null
+          responsavel?: string | null
+          servico?: string | null
+          telefone?: string | null
+          ticket?: number | null
+          updated_at?: string
+        }
+        Update: {
+          coluna_id?: string
+          created_at?: string
+          data_contato?: string | null
+          email?: string | null
+          empresa?: string
+          id?: string
+          iniciais?: string | null
+          nome?: string
+          observacoes?: string | null
+          responsavel?: string | null
+          servico?: string | null
+          telefone?: string | null
+          ticket?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_clientes_coluna_id_fkey"
+            columns: ["coluna_id"]
+            isOneToOne: false
+            referencedRelation: "crm_colunas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_colunas: {
+        Row: {
+          cor: string
+          created_at: string
+          id: string
+          ordem: number
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          cor?: string
+          created_at?: string
+          id?: string
+          ordem?: number
+          titulo: string
+          updated_at?: string
+        }
+        Update: {
+          cor?: string
+          created_at?: string
+          id?: string
+          ordem?: number
+          titulo?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      dashboard_config: {
+        Row: {
+          chave: string
+          created_at: string
+          id: string
+          updated_at: string
+          valor: Json
+        }
+        Insert: {
+          chave: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          valor: Json
+        }
+        Update: {
+          chave?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          valor?: Json
+        }
+        Relationships: []
+      }
+      faturamento_mensal: {
+        Row: {
+          ano: number
+          created_at: string
+          id: string
+          mes: string
+          updated_at: string
+          valor: number
+        }
+        Insert: {
+          ano: number
+          created_at?: string
+          id?: string
+          mes: string
+          updated_at?: string
+          valor?: number
+        }
+        Update: {
+          ano?: number
+          created_at?: string
+          id?: string
+          mes?: string
+          updated_at?: string
+          valor?: number
+        }
+        Relationships: []
+      }
+      vendedores: {
+        Row: {
+          clientes_ativos: number | null
+          cor: string | null
+          created_at: string
+          email: string | null
+          id: string
+          iniciais: string
+          meta_mensal: number | null
+          negocios_fechados: number | null
+          nome: string
+          reunioes_agendadas: number | null
+          reunioes_fechadas: number | null
+          telefone: string | null
+          updated_at: string
+          vendas_mes: number | null
+          whatsapp: string | null
+        }
+        Insert: {
+          clientes_ativos?: number | null
+          cor?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          iniciais: string
+          meta_mensal?: number | null
+          negocios_fechados?: number | null
+          nome: string
+          reunioes_agendadas?: number | null
+          reunioes_fechadas?: number | null
+          telefone?: string | null
+          updated_at?: string
+          vendas_mes?: number | null
+          whatsapp?: string | null
+        }
+        Update: {
+          clientes_ativos?: number | null
+          cor?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          iniciais?: string
+          meta_mensal?: number | null
+          negocios_fechados?: number | null
+          nome?: string
+          reunioes_agendadas?: number | null
+          reunioes_fechadas?: number | null
+          telefone?: string | null
+          updated_at?: string
+          vendas_mes?: number | null
+          whatsapp?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
