@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, memo } from "react";
 import { Sidebar } from "@/components/dashboard/Sidebar";
 import { Header } from "@/components/dashboard/Header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,6 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import {
   Select,
@@ -92,6 +93,108 @@ const coresDisponiveis = [
   { nome: "Âmbar", valor: "bg-amber-500" },
 ];
 
+// Componente de stat memoizado
+const StatCard = memo(({ label, value, isPrimary = false }: { label: string; value: string | number; isPrimary?: boolean }) => (
+  <Card className="hover-lift">
+    <CardContent className="p-3 sm:p-4">
+      <p className="text-[10px] sm:text-xs text-muted-foreground truncate">{label}</p>
+      <p className={`text-base sm:text-xl font-bold truncate ${isPrimary ? 'text-primary' : 'text-foreground'}`}>{value}</p>
+    </CardContent>
+  </Card>
+));
+
+StatCard.displayName = "StatCard";
+
+// Componente de card do cliente memoizado
+const ClienteCard = memo(({ 
+  cliente, 
+  colunaId,
+  onDragStart, 
+  onDragEnd, 
+  onView, 
+  onEdit, 
+  onDelete,
+  formatCurrency 
+}: {
+  cliente: Cliente;
+  colunaId: string;
+  onDragStart: (e: React.DragEvent, colunaId: string, clienteId: string) => void;
+  onDragEnd: () => void;
+  onView: (cliente: Cliente) => void;
+  onEdit: (cliente: Cliente) => void;
+  onDelete: (clienteId: string) => void;
+  formatCurrency: (value: number) => string;
+}) => (
+  <Card
+    draggable
+    onDragStart={(e) => onDragStart(e, colunaId, cliente.id)}
+    onDragEnd={onDragEnd}
+    className="cursor-grab active:cursor-grabbing hover:shadow-md transition-all group"
+  >
+    <CardContent className="p-2 sm:p-3">
+      <div className="flex items-start justify-between mb-1.5 sm:mb-2 gap-1">
+        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
+          <GripVertical className="w-3 h-3 sm:w-4 sm:h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+          <Avatar className="w-6 h-6 sm:w-8 sm:h-8 bg-primary/10 flex-shrink-0">
+            <AvatarFallback className="text-[10px] sm:text-xs font-medium text-primary bg-transparent">
+              {cliente.iniciais}
+            </AvatarFallback>
+          </Avatar>
+          <div className="min-w-0 flex-1">
+            <p className="font-medium text-xs sm:text-sm truncate">{cliente.nome}</p>
+            <p className="text-[10px] sm:text-xs text-muted-foreground truncate">{cliente.empresa}</p>
+          </div>
+        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-5 w-5 sm:h-6 sm:w-6 opacity-0 group-hover:opacity-100 flex-shrink-0">
+              <MoreHorizontal className="w-3 h-3" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="z-50 bg-popover">
+            <DropdownMenuItem onClick={() => onView(cliente)}>
+              <Eye className="w-4 h-4 mr-2" />
+              Ver detalhes
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onEdit(cliente)}>
+              <Pencil className="w-4 h-4 mr-2" />
+              Editar
+            </DropdownMenuItem>
+            <DropdownMenuItem 
+              onClick={() => onDelete(cliente.id)}
+              className="text-destructive"
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Excluir
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+      <div className="space-y-0.5 sm:space-y-1 text-[10px] sm:text-xs">
+        <div className="flex items-center gap-1 text-primary font-medium">
+          <DollarSign className="w-2.5 h-2.5 sm:w-3 sm:h-3 flex-shrink-0" />
+          <span className="truncate">{formatCurrency(Number(cliente.ticket || 0))}</span>
+        </div>
+        <div className="flex items-center gap-1 text-muted-foreground">
+          <User className="w-2.5 h-2.5 sm:w-3 sm:h-3 flex-shrink-0" />
+          <span className="truncate">{cliente.responsavel}</span>
+        </div>
+        <div className="flex items-center gap-1 text-muted-foreground">
+          <Calendar className="w-2.5 h-2.5 sm:w-3 sm:h-3 flex-shrink-0" />
+          <span className="truncate">{cliente.data_contato}</span>
+        </div>
+      </div>
+      {cliente.servico && (
+        <Badge variant="outline" className="mt-1.5 sm:mt-2 text-[9px] sm:text-xs px-1.5 sm:px-2 py-0 truncate max-w-full">
+          {cliente.servico}
+        </Badge>
+      )}
+    </CardContent>
+  </Card>
+));
+
+ClienteCard.displayName = "ClienteCard";
+
 const CRM = () => {
   const [colunas, setColunas] = useState<Coluna[]>([]);
   const [loading, setLoading] = useState(true);
@@ -123,8 +226,7 @@ const CRM = () => {
   
   const [formColuna, setFormColuna] = useState({ titulo: "", cor: "bg-blue-500" });
 
-  const fetchData = async () => {
-    // Buscar colunas
+  const fetchData = useCallback(async () => {
     const { data: colunasData, error: colunasError } = await supabase
       .from('crm_colunas')
       .select('*')
@@ -136,7 +238,6 @@ const CRM = () => {
       return;
     }
 
-    // Buscar clientes
     const { data: clientesData, error: clientesError } = await supabase
       .from('crm_clientes')
       .select('*')
@@ -148,7 +249,6 @@ const CRM = () => {
       return;
     }
 
-    // Organizar clientes por coluna
     const colunasComClientes: Coluna[] = (colunasData || []).map(col => ({
       ...col,
       clientes: (clientesData || []).filter(c => c.coluna_id === col.id)
@@ -156,41 +256,41 @@ const CRM = () => {
 
     setColunas(colunasComClientes);
     setLoading(false);
-  };
+  }, []);
 
   useEffect(() => {
     fetchData();
+  }, [fetchData]);
+
+  const formatCurrency = useCallback((value: number) => {
+    return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   }, []);
 
-  const formatCurrency = (value: number) => {
-    return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-  };
-
-  const gerarIniciais = (nome: string) => {
+  const gerarIniciais = useCallback((nome: string) => {
     const partes = nome.trim().split(' ');
     if (partes.length >= 2) {
       return (partes[0][0] + partes[partes.length - 1][0]).toUpperCase();
     }
     return nome.substring(0, 2).toUpperCase();
-  };
+  }, []);
 
   // Drag and Drop
-  const handleDragStart = (e: React.DragEvent, colunaId: string, clienteId: string) => {
+  const handleDragStart = useCallback((e: React.DragEvent, colunaId: string, clienteId: string) => {
     setDraggedItem({ colunaId, clienteId });
     e.dataTransfer.effectAllowed = 'move';
-  };
+  }, []);
 
-  const handleDragOver = (e: React.DragEvent, colunaId: string) => {
+  const handleDragOver = useCallback((e: React.DragEvent, colunaId: string) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
     setDragOverColuna(colunaId);
-  };
+  }, []);
 
-  const handleDragLeave = () => {
+  const handleDragLeave = useCallback(() => {
     setDragOverColuna(null);
-  };
+  }, []);
 
-  const handleDrop = async (e: React.DragEvent, targetColunaId: string) => {
+  const handleDrop = useCallback(async (e: React.DragEvent, targetColunaId: string) => {
     e.preventDefault();
     setDragOverColuna(null);
     
@@ -200,7 +300,6 @@ const CRM = () => {
       return;
     }
 
-    // Atualizar no banco
     const { error } = await supabase
       .from('crm_clientes')
       .update({ coluna_id: targetColunaId })
@@ -215,15 +314,15 @@ const CRM = () => {
     }
     
     setDraggedItem(null);
-  };
+  }, [draggedItem, colunas, fetchData]);
 
-  const handleDragEnd = () => {
+  const handleDragEnd = useCallback(() => {
     setDraggedItem(null);
     setDragOverColuna(null);
-  };
+  }, []);
 
   // CRUD de Clientes
-  const abrirModalNovoCliente = (colunaId: string) => {
+  const abrirModalNovoCliente = useCallback((colunaId: string) => {
     setClienteEditando(null);
     setColunaDestino(colunaId);
     setFormCliente({
@@ -237,9 +336,9 @@ const CRM = () => {
       observacoes: ""
     });
     setClienteModalOpen(true);
-  };
+  }, []);
 
-  const abrirModalEditarCliente = (cliente: Cliente) => {
+  const abrirModalEditarCliente = useCallback((cliente: Cliente) => {
     setClienteEditando(cliente);
     setColunaDestino(cliente.coluna_id);
     setFormCliente({
@@ -253,14 +352,14 @@ const CRM = () => {
       observacoes: cliente.observacoes || ""
     });
     setClienteModalOpen(true);
-  };
+  }, []);
 
-  const abrirModalDetalhes = (cliente: Cliente) => {
+  const abrirModalDetalhes = useCallback((cliente: Cliente) => {
     setClienteVisualizando(cliente);
     setDetalhesModalOpen(true);
-  };
+  }, []);
 
-  const salvarCliente = async () => {
+  const salvarCliente = useCallback(async () => {
     if (!formCliente.nome || !formCliente.empresa || !formCliente.responsavel || !formCliente.servico) {
       toast.error("Preencha todos os campos obrigatórios");
       return;
@@ -269,7 +368,6 @@ const CRM = () => {
     const hoje = new Date().toLocaleDateString('pt-BR');
     
     if (clienteEditando) {
-      // Editar
       const { error } = await supabase
         .from('crm_clientes')
         .update({
@@ -292,7 +390,6 @@ const CRM = () => {
         fetchData();
       }
     } else {
-      // Criar
       const { error } = await supabase
         .from('crm_clientes')
         .insert({
@@ -318,9 +415,9 @@ const CRM = () => {
     }
     
     setClienteModalOpen(false);
-  };
+  }, [formCliente, clienteEditando, colunaDestino, gerarIniciais, fetchData]);
 
-  const excluirCliente = async (clienteId: string) => {
+  const excluirCliente = useCallback(async (clienteId: string) => {
     const { error } = await supabase
       .from('crm_clientes')
       .delete()
@@ -332,22 +429,22 @@ const CRM = () => {
       toast.success("Cliente removido");
       fetchData();
     }
-  };
+  }, [fetchData]);
 
   // CRUD de Colunas
-  const abrirModalNovaColuna = () => {
+  const abrirModalNovaColuna = useCallback(() => {
     setColunaEditando(null);
     setFormColuna({ titulo: "", cor: "bg-blue-500" });
     setColunaModalOpen(true);
-  };
+  }, []);
 
-  const abrirModalEditarColuna = (coluna: Coluna) => {
+  const abrirModalEditarColuna = useCallback((coluna: Coluna) => {
     setColunaEditando(coluna);
     setFormColuna({ titulo: coluna.titulo, cor: coluna.cor });
     setColunaModalOpen(true);
-  };
+  }, []);
 
-  const salvarColuna = async () => {
+  const salvarColuna = useCallback(async () => {
     if (!formColuna.titulo) {
       toast.error("Digite o nome da coluna");
       return;
@@ -384,9 +481,9 @@ const CRM = () => {
     }
     
     setColunaModalOpen(false);
-  };
+  }, [formColuna, colunaEditando, colunas, fetchData]);
 
-  const excluirColuna = async (colunaId: string) => {
+  const excluirColuna = useCallback(async (colunaId: string) => {
     const coluna = colunas.find(c => c.id === colunaId);
     if (coluna && coluna.clientes.length > 0) {
       toast.error("Mova os clientes antes de excluir a coluna");
@@ -404,7 +501,7 @@ const CRM = () => {
       toast.success("Coluna removida");
       fetchData();
     }
-  };
+  }, [colunas, fetchData]);
 
   // Stats
   const totalTicket = colunas.reduce((acc, col) => 
@@ -418,7 +515,7 @@ const CRM = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-muted-foreground">Carregando...</p>
+        <div className="animate-pulse text-muted-foreground">Carregando...</div>
       </div>
     );
   }
@@ -430,57 +527,37 @@ const CRM = () => {
       <div className="lg:ml-64">
         <Header />
         
-        <main className="p-4 md:p-6">
+        <main className="p-3 sm:p-4 md:p-6">
           {/* Page Title */}
-          <div className="mb-6 flex items-center justify-between">
-            <div>
-              <h2 className="text-2xl md:text-3xl font-bold text-foreground flex items-center gap-2">
-                <Kanban className="w-7 h-7 text-primary" />
-                CRM - Pipeline de Vendas
+          <div className="mb-4 sm:mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4">
+            <div className="min-w-0">
+              <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground flex items-center gap-2">
+                <Kanban className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 text-primary flex-shrink-0" />
+                <span className="truncate">CRM - Pipeline</span>
               </h2>
-              <p className="text-muted-foreground mt-1">Arraste os cards para atualizar o status dos clientes</p>
+              <p className="text-xs sm:text-sm text-muted-foreground mt-1">Arraste os cards para atualizar status</p>
             </div>
-            <Button onClick={() => setConfigModalOpen(true)} variant="outline" size="sm">
+            <Button onClick={() => setConfigModalOpen(true)} variant="outline" size="sm" className="self-start sm:self-auto">
               <Settings className="w-4 h-4 mr-2" />
-              Configurar
+              <span className="hidden sm:inline">Configurar</span>
             </Button>
           </div>
 
           {/* Summary Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <Card className="hover-lift">
-              <CardContent className="p-4">
-                <p className="text-xs text-muted-foreground">Total no Pipeline</p>
-                <p className="text-xl font-bold text-foreground">{formatCurrency(totalTicket)}</p>
-              </CardContent>
-            </Card>
-            <Card className="hover-lift">
-              <CardContent className="p-4">
-                <p className="text-xs text-muted-foreground">Leads Ativos</p>
-                <p className="text-xl font-bold text-foreground">{totalClientes}</p>
-              </CardContent>
-            </Card>
-            <Card className="hover-lift">
-              <CardContent className="p-4">
-                <p className="text-xs text-muted-foreground">Negócios Fechados</p>
-                <p className="text-xl font-bold text-primary">{clientesFechados}</p>
-              </CardContent>
-            </Card>
-            <Card className="hover-lift">
-              <CardContent className="p-4">
-                <p className="text-xs text-muted-foreground">Valor Fechado</p>
-                <p className="text-xl font-bold text-primary">{formatCurrency(ticketFechado)}</p>
-              </CardContent>
-            </Card>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 md:gap-4 mb-4 sm:mb-6">
+            <StatCard label="Total no Pipeline" value={formatCurrency(totalTicket)} />
+            <StatCard label="Leads Ativos" value={totalClientes} />
+            <StatCard label="Negócios Fechados" value={clientesFechados} isPrimary />
+            <StatCard label="Valor Fechado" value={formatCurrency(ticketFechado)} isPrimary />
           </div>
 
           {/* Kanban Board */}
-          <div className="overflow-x-auto pb-4 kanban-scroll">
-            <div className="flex gap-4 min-w-max">
+          <div className="overflow-x-auto pb-4 -mx-3 px-3 sm:-mx-4 sm:px-4 md:-mx-6 md:px-6">
+            <div className="flex gap-3 sm:gap-4 min-w-max">
               {colunas.map((coluna) => (
                 <div
                   key={coluna.id}
-                  className="w-80 flex-shrink-0"
+                  className="w-64 sm:w-72 md:w-80 flex-shrink-0"
                   onDragOver={(e) => handleDragOver(e, coluna.id)}
                   onDragLeave={handleDragLeave}
                   onDrop={(e) => handleDrop(e, coluna.id)}
@@ -488,31 +565,31 @@ const CRM = () => {
                   <Card className={`bg-secondary/30 border-dashed transition-all ${
                     dragOverColuna === coluna.id ? 'ring-2 ring-primary bg-primary/5' : ''
                   }`}>
-                    <CardHeader className="pb-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <div className={`w-3 h-3 rounded-full ${coluna.cor}`} />
-                          <CardTitle className="text-base">{coluna.titulo}</CardTitle>
-                          <Badge variant="secondary" className="text-xs">
+                    <CardHeader className="pb-2 sm:pb-3 px-2 sm:px-4">
+                      <div className="flex items-center justify-between gap-1">
+                        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
+                          <div className={`w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full ${coluna.cor} flex-shrink-0`} />
+                          <CardTitle className="text-sm sm:text-base truncate">{coluna.titulo}</CardTitle>
+                          <Badge variant="secondary" className="text-[10px] sm:text-xs px-1.5 flex-shrink-0">
                             {coluna.clientes.length}
                           </Badge>
                         </div>
-                        <div className="flex gap-1">
+                        <div className="flex gap-0.5 flex-shrink-0">
                           <Button 
                             variant="ghost" 
                             size="icon" 
-                            className="h-8 w-8"
+                            className="h-6 w-6 sm:h-8 sm:w-8"
                             onClick={() => abrirModalNovoCliente(coluna.id)}
                           >
-                            <Plus className="w-4 h-4" />
+                            <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
                           </Button>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8">
-                                <MoreHorizontal className="w-4 h-4" />
+                              <Button variant="ghost" size="icon" className="h-6 w-6 sm:h-8 sm:w-8">
+                                <MoreHorizontal className="w-3 h-3 sm:w-4 sm:h-4" />
                               </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
+                            <DropdownMenuContent align="end" className="z-50 bg-popover">
                               <DropdownMenuItem onClick={() => abrirModalEditarColuna(coluna)}>
                                 <Pencil className="w-4 h-4 mr-2" />
                                 Editar coluna
@@ -529,79 +606,23 @@ const CRM = () => {
                         </div>
                       </div>
                     </CardHeader>
-                    <CardContent className="space-y-3 min-h-[200px]">
+                    <CardContent className="space-y-2 sm:space-y-3 min-h-[150px] sm:min-h-[200px] px-2 sm:px-4 pb-2 sm:pb-4">
                       {coluna.clientes.map((cliente) => (
-                        <Card
+                        <ClienteCard
                           key={cliente.id}
-                          draggable
-                          onDragStart={(e) => handleDragStart(e, coluna.id, cliente.id)}
+                          cliente={cliente}
+                          colunaId={coluna.id}
+                          onDragStart={handleDragStart}
                           onDragEnd={handleDragEnd}
-                          className="cursor-grab active:cursor-grabbing hover:shadow-md transition-all group"
-                        >
-                          <CardContent className="p-3">
-                            <div className="flex items-start justify-between mb-2">
-                              <div className="flex items-center gap-2">
-                                <GripVertical className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                                <Avatar className="w-8 h-8 bg-primary/10">
-                                  <AvatarFallback className="text-xs font-medium text-primary bg-transparent">
-                                    {cliente.iniciais}
-                                  </AvatarFallback>
-                                </Avatar>
-                                <div>
-                                  <p className="font-medium text-sm">{cliente.nome}</p>
-                                  <p className="text-xs text-muted-foreground">{cliente.empresa}</p>
-                                </div>
-                              </div>
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100">
-                                    <MoreHorizontal className="w-3 h-3" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem onClick={() => abrirModalDetalhes(cliente)}>
-                                    <Eye className="w-4 h-4 mr-2" />
-                                    Ver detalhes
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => abrirModalEditarCliente(cliente)}>
-                                    <Pencil className="w-4 h-4 mr-2" />
-                                    Editar
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem 
-                                    onClick={() => excluirCliente(cliente.id)}
-                                    className="text-destructive"
-                                  >
-                                    <Trash2 className="w-4 h-4 mr-2" />
-                                    Excluir
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </div>
-                            <div className="space-y-1 text-xs">
-                              <div className="flex items-center gap-1 text-primary font-medium">
-                                <DollarSign className="w-3 h-3" />
-                                {formatCurrency(Number(cliente.ticket || 0))}
-                              </div>
-                              <div className="flex items-center gap-1 text-muted-foreground">
-                                <User className="w-3 h-3" />
-                                {cliente.responsavel}
-                              </div>
-                              <div className="flex items-center gap-1 text-muted-foreground">
-                                <Calendar className="w-3 h-3" />
-                                {cliente.data_contato}
-                              </div>
-                            </div>
-                            {cliente.servico && (
-                              <Badge variant="outline" className="mt-2 text-xs">
-                                {cliente.servico}
-                              </Badge>
-                            )}
-                          </CardContent>
-                        </Card>
+                          onView={abrirModalDetalhes}
+                          onEdit={abrirModalEditarCliente}
+                          onDelete={excluirCliente}
+                          formatCurrency={formatCurrency}
+                        />
                       ))}
                       {coluna.clientes.length === 0 && (
-                        <div className="text-center py-8 text-muted-foreground text-sm">
-                          Arraste clientes aqui ou clique em + para adicionar
+                        <div className="text-center py-6 sm:py-8 text-muted-foreground text-xs sm:text-sm">
+                          Arraste clientes aqui
                         </div>
                       )}
                     </CardContent>
@@ -617,25 +638,26 @@ const CRM = () => {
 
       {/* Modal de Configuração */}
       <Dialog open={configModalOpen} onOpenChange={setConfigModalOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-[95vw] sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Configurar Pipeline</DialogTitle>
+            <DialogDescription>Gerencie as colunas do seu CRM</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <Button onClick={abrirModalNovaColuna} className="w-full">
               <Plus className="w-4 h-4 mr-2" />
               Adicionar Nova Coluna
             </Button>
-            <div className="space-y-2">
+            <div className="space-y-2 max-h-[40vh] overflow-y-auto">
               <p className="text-sm font-medium">Colunas existentes:</p>
               {colunas.map((coluna) => (
-                <div key={coluna.id} className="flex items-center justify-between p-2 bg-secondary/30 rounded-lg">
-                  <div className="flex items-center gap-2">
-                    <div className={`w-3 h-3 rounded-full ${coluna.cor}`} />
-                    <span className="text-sm">{coluna.titulo}</span>
-                    <Badge variant="secondary" className="text-xs">{coluna.clientes.length}</Badge>
+                <div key={coluna.id} className="flex items-center justify-between p-2 bg-secondary/30 rounded-lg gap-2">
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <div className={`w-3 h-3 rounded-full ${coluna.cor} flex-shrink-0`} />
+                    <span className="text-sm truncate">{coluna.titulo}</span>
+                    <Badge variant="secondary" className="text-xs flex-shrink-0">{coluna.clientes.length}</Badge>
                   </div>
-                  <div className="flex gap-1">
+                  <div className="flex gap-1 flex-shrink-0">
                     <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => abrirModalEditarColuna(coluna)}>
                       <Pencil className="w-3 h-3" />
                     </Button>
@@ -657,9 +679,10 @@ const CRM = () => {
 
       {/* Modal de Coluna */}
       <Dialog open={colunaModalOpen} onOpenChange={setColunaModalOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-[95vw] sm:max-w-md">
           <DialogHeader>
             <DialogTitle>{colunaEditando ? "Editar Coluna" : "Nova Coluna"}</DialogTitle>
+            <DialogDescription>Configure o nome e a cor da coluna</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div>
@@ -679,7 +702,7 @@ const CRM = () => {
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="z-50 bg-popover">
                   {coresDisponiveis.map((cor) => (
                     <SelectItem key={cor.valor} value={cor.valor}>
                       <div className="flex items-center gap-2">
@@ -692,7 +715,7 @@ const CRM = () => {
               </Select>
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="outline" onClick={() => setColunaModalOpen(false)}>Cancelar</Button>
             <Button onClick={salvarColuna}>Salvar</Button>
           </DialogFooter>
@@ -701,48 +724,52 @@ const CRM = () => {
 
       {/* Modal de Cliente */}
       <Dialog open={clienteModalOpen} onOpenChange={setClienteModalOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-[95vw] sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>{clienteEditando ? "Editar Cliente" : "Novo Cliente"}</DialogTitle>
+            <DialogDescription>Preencha os dados do cliente</DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto">
-            <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-3 sm:space-y-4 py-3 sm:py-4 max-h-[50vh] sm:max-h-[60vh] overflow-y-auto">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
-                <Label>Nome *</Label>
+                <Label className="text-xs sm:text-sm">Nome *</Label>
                 <Input
+                  className="h-9 sm:h-10 text-sm"
                   value={formCliente.nome}
                   onChange={(e) => setFormCliente(prev => ({ ...prev, nome: e.target.value }))}
                   placeholder="Nome do cliente"
                 />
               </div>
               <div>
-                <Label>Empresa *</Label>
+                <Label className="text-xs sm:text-sm">Empresa *</Label>
                 <Input
+                  className="h-9 sm:h-10 text-sm"
                   value={formCliente.empresa}
                   onChange={(e) => setFormCliente(prev => ({ ...prev, empresa: e.target.value }))}
                   placeholder="Nome da empresa"
                 />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
-                <Label>Ticket (R$)</Label>
+                <Label className="text-xs sm:text-sm">Ticket (R$)</Label>
                 <Input
                   type="number"
+                  className="h-9 sm:h-10 text-sm"
                   value={formCliente.ticket}
                   onChange={(e) => setFormCliente(prev => ({ ...prev, ticket: Number(e.target.value) }))}
                 />
               </div>
               <div>
-                <Label>Responsável *</Label>
+                <Label className="text-xs sm:text-sm">Responsável *</Label>
                 <Select 
                   value={formCliente.responsavel} 
                   onValueChange={(value) => setFormCliente(prev => ({ ...prev, responsavel: value }))}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="h-9 sm:h-10 text-sm">
                     <SelectValue placeholder="Selecione" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="z-50 bg-popover">
                     {responsaveisDisponiveis.map((r) => (
                       <SelectItem key={r} value={r}>{r}</SelectItem>
                     ))}
@@ -751,34 +778,36 @@ const CRM = () => {
               </div>
             </div>
             <div>
-              <Label>Serviço *</Label>
+              <Label className="text-xs sm:text-sm">Serviço *</Label>
               <Select 
                 value={formCliente.servico} 
                 onValueChange={(value) => setFormCliente(prev => ({ ...prev, servico: value }))}
               >
-                <SelectTrigger>
+                <SelectTrigger className="h-9 sm:h-10 text-sm">
                   <SelectValue placeholder="Selecione o serviço" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="z-50 bg-popover">
                   {servicosDisponiveis.map((s) => (
                     <SelectItem key={s} value={s}>{s}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
-                <Label>Telefone</Label>
+                <Label className="text-xs sm:text-sm">Telefone</Label>
                 <Input
+                  className="h-9 sm:h-10 text-sm"
                   value={formCliente.telefone}
                   onChange={(e) => setFormCliente(prev => ({ ...prev, telefone: e.target.value }))}
                   placeholder="(00) 00000-0000"
                 />
               </div>
               <div>
-                <Label>Email</Label>
+                <Label className="text-xs sm:text-sm">Email</Label>
                 <Input
                   type="email"
+                  className="h-9 sm:h-10 text-sm"
                   value={formCliente.email}
                   onChange={(e) => setFormCliente(prev => ({ ...prev, email: e.target.value }))}
                   placeholder="email@exemplo.com"
@@ -786,82 +815,84 @@ const CRM = () => {
               </div>
             </div>
             <div>
-              <Label>Observações</Label>
+              <Label className="text-xs sm:text-sm">Observações</Label>
               <Textarea
+                className="text-sm"
                 value={formCliente.observacoes}
                 onChange={(e) => setFormCliente(prev => ({ ...prev, observacoes: e.target.value }))}
-                placeholder="Anotações sobre o cliente..."
-                rows={3}
+                placeholder="Anotações..."
+                rows={2}
               />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setClienteModalOpen(false)}>Cancelar</Button>
-            <Button onClick={salvarCliente}>Salvar</Button>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" size="sm" onClick={() => setClienteModalOpen(false)}>Cancelar</Button>
+            <Button size="sm" onClick={salvarCliente}>Salvar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Modal de Detalhes */}
       <Dialog open={detalhesModalOpen} onOpenChange={setDetalhesModalOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-[95vw] sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Detalhes do Cliente</DialogTitle>
+            <DialogDescription>Informações completas do lead</DialogDescription>
           </DialogHeader>
           {clienteVisualizando && (
             <div className="space-y-4 py-4">
-              <div className="flex items-center gap-4">
-                <Avatar className="w-16 h-16 bg-primary/10">
-                  <AvatarFallback className="text-xl font-bold text-primary bg-transparent">
+              <div className="flex items-center gap-3 sm:gap-4">
+                <Avatar className="w-12 h-12 sm:w-16 sm:h-16 bg-primary/10 flex-shrink-0">
+                  <AvatarFallback className="text-lg sm:text-xl font-bold text-primary bg-transparent">
                     {clienteVisualizando.iniciais}
                   </AvatarFallback>
                 </Avatar>
-                <div>
-                  <h3 className="text-xl font-semibold">{clienteVisualizando.nome}</h3>
-                  <p className="text-muted-foreground">{clienteVisualizando.empresa}</p>
+                <div className="min-w-0">
+                  <h3 className="text-lg sm:text-xl font-semibold truncate">{clienteVisualizando.nome}</h3>
+                  <p className="text-sm text-muted-foreground truncate">{clienteVisualizando.empresa}</p>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4 text-sm">
+              <div className="grid grid-cols-2 gap-3 sm:gap-4 text-sm">
                 <div>
-                  <p className="text-muted-foreground">Ticket</p>
+                  <p className="text-muted-foreground text-xs">Ticket</p>
                   <p className="font-medium text-primary">{formatCurrency(Number(clienteVisualizando.ticket || 0))}</p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground">Responsável</p>
-                  <p className="font-medium">{clienteVisualizando.responsavel}</p>
+                  <p className="text-muted-foreground text-xs">Responsável</p>
+                  <p className="font-medium truncate">{clienteVisualizando.responsavel}</p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground">Serviço</p>
-                  <p className="font-medium">{clienteVisualizando.servico}</p>
+                  <p className="text-muted-foreground text-xs">Serviço</p>
+                  <p className="font-medium truncate">{clienteVisualizando.servico}</p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground">Data de Contato</p>
+                  <p className="text-muted-foreground text-xs">Data de Contato</p>
                   <p className="font-medium">{clienteVisualizando.data_contato}</p>
                 </div>
                 {clienteVisualizando.telefone && (
                   <div>
-                    <p className="text-muted-foreground">Telefone</p>
+                    <p className="text-muted-foreground text-xs">Telefone</p>
                     <p className="font-medium">{clienteVisualizando.telefone}</p>
                   </div>
                 )}
                 {clienteVisualizando.email && (
                   <div>
-                    <p className="text-muted-foreground">Email</p>
-                    <p className="font-medium">{clienteVisualizando.email}</p>
+                    <p className="text-muted-foreground text-xs">Email</p>
+                    <p className="font-medium truncate">{clienteVisualizando.email}</p>
                   </div>
                 )}
               </div>
               {clienteVisualizando.observacoes && (
                 <div>
-                  <p className="text-muted-foreground text-sm">Observações</p>
+                  <p className="text-muted-foreground text-xs">Observações</p>
                   <p className="mt-1 text-sm bg-secondary/30 p-3 rounded-lg">{clienteVisualizando.observacoes}</p>
                 </div>
               )}
             </div>
           )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDetalhesModalOpen(false)}>Fechar</Button>
-            <Button onClick={() => {
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" size="sm" onClick={() => setDetalhesModalOpen(false)}>Fechar</Button>
+            <Button size="sm" onClick={() => {
               setDetalhesModalOpen(false);
               if (clienteVisualizando) abrirModalEditarCliente(clienteVisualizando);
             }}>
