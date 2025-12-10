@@ -1,17 +1,50 @@
 import { Card } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { BarChart3 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
-const data = [
-  { day: "Jul", vendas: 22000 },
-  { day: "Ago", vendas: 28000 },
-  { day: "Set", vendas: 25000 },
-  { day: "Out", vendas: 32000 },
-  { day: "Nov", vendas: 45000 },
-  { day: "Dez", vendas: 18500 },
+interface FaturamentoData {
+  day: string;
+  vendas: number;
+}
+
+const defaultData: FaturamentoData[] = [
+  { day: "Jul", vendas: 0 },
+  { day: "Ago", vendas: 0 },
+  { day: "Set", vendas: 0 },
+  { day: "Out", vendas: 0 },
+  { day: "Nov", vendas: 2900 },
+  { day: "Dez", vendas: 6100 },
 ];
 
 export function SalesChart() {
+  const [data, setData] = useState<FaturamentoData[]>(defaultData);
+
+  useEffect(() => {
+    const fetchFaturamento = async () => {
+      const { data: faturamento } = await supabase
+        .from('faturamento_mensal')
+        .select('*')
+        .eq('ano', 2025)
+        .order('mes');
+
+      if (faturamento && faturamento.length > 0) {
+        const mesesOrdem = ['Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+        const newData = mesesOrdem.map(mes => {
+          const found = faturamento.find(f => f.mes === mes);
+          return {
+            day: mes,
+            vendas: found ? Number(found.valor) : 0
+          };
+        });
+        setData(newData);
+      }
+    };
+
+    fetchFaturamento();
+  }, []);
+
   return (
     <Card className="p-4 md:p-6 shadow-card border-0 animate-scale-in" style={{ animationDelay: '100ms' }}>
       <div className="flex items-center gap-2 md:gap-3 mb-4 md:mb-6">
@@ -19,7 +52,7 @@ export function SalesChart() {
           <BarChart3 className="w-4 h-4 md:w-5 md:h-5 text-primary" />
         </div>
         <div>
-          <h3 className="font-semibold text-base md:text-lg">Faturamento Mensal</h3>
+          <h3 className="font-semibold text-base md:text-lg">Faturamento Mensal 2025</h3>
           <p className="text-xs md:text-sm text-muted-foreground">Últimos 6 meses</p>
         </div>
       </div>

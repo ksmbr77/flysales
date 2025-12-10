@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Sidebar } from "@/components/dashboard/Sidebar";
 import { Header } from "@/components/dashboard/Header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { WhatsAppButton } from "@/components/dashboard/WhatsAppButton";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { 
   Dialog,
   DialogContent,
@@ -35,7 +36,7 @@ import {
   Eye,
   Settings
 } from "lucide-react";
-import { usePersistentState } from "@/hooks/usePersistentState";
+import { supabase } from "@/integrations/supabase/client";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -46,22 +47,24 @@ import { toast } from "sonner";
 
 interface Cliente {
   id: string;
+  coluna_id: string;
   nome: string;
   empresa: string;
   ticket: number;
-  responsavel: string;
-  iniciais: string;
-  dataContato: string;
-  servico: string;
-  telefone?: string;
-  email?: string;
-  observacoes?: string;
+  responsavel: string | null;
+  iniciais: string | null;
+  data_contato: string | null;
+  servico: string | null;
+  telefone: string | null;
+  email: string | null;
+  observacoes: string | null;
 }
 
 interface Coluna {
   id: string;
   titulo: string;
   cor: string;
+  ordem: number;
   clientes: Cliente[];
 }
 
@@ -81,91 +84,17 @@ const coresDisponiveis = [
   { nome: "Verde", valor: "bg-accent" },
   { nome: "Rosa", valor: "bg-pink-500" },
   { nome: "Vermelho", valor: "bg-red-500" },
-];
-
-const colunasIniciais: Coluna[] = [
-  {
-    id: "lead",
-    titulo: "Novos Leads",
-    cor: "bg-blue-500",
-    clientes: [
-      {
-        id: "1",
-        nome: "Carlos Silva",
-        empresa: "Tech Solutions",
-        ticket: 3500,
-        responsavel: "Gustavo Fontes",
-        iniciais: "CS",
-        dataContato: "05/12/2024",
-        servico: "Gestão de Tráfego Pago"
-      },
-      {
-        id: "2",
-        nome: "Ana Paula",
-        empresa: "Beauty Store",
-        ticket: 2800,
-        responsavel: "Davi Nascimento",
-        iniciais: "AP",
-        dataContato: "06/12/2024",
-        servico: "Funis de Vendas"
-      }
-    ]
-  },
-  {
-    id: "qualificado",
-    titulo: "Qualificados",
-    cor: "bg-primary",
-    clientes: [
-      {
-        id: "3",
-        nome: "Roberto Mendes",
-        empresa: "Auto Peças RJ",
-        ticket: 5000,
-        responsavel: "Gustavo Fontes",
-        iniciais: "RM",
-        dataContato: "03/12/2024",
-        servico: "Marketing 360"
-      }
-    ]
-  },
-  {
-    id: "negociacao",
-    titulo: "Em Negociação",
-    cor: "bg-warning",
-    clientes: [
-      {
-        id: "4",
-        nome: "Julia Santos",
-        empresa: "Delícias da Ju",
-        ticket: 2500,
-        responsavel: "Davi Nascimento",
-        iniciais: "JS",
-        dataContato: "04/12/2024",
-        servico: "Funis de Vendas"
-      }
-    ]
-  },
-  {
-    id: "fechado",
-    titulo: "Fechado",
-    cor: "bg-accent",
-    clientes: [
-      {
-        id: "5",
-        nome: "Pedro Costa",
-        empresa: "Construtora PC",
-        ticket: 8000,
-        responsavel: "Gustavo Fontes",
-        iniciais: "PC",
-        dataContato: "28/11/2024",
-        servico: "Marketing 360"
-      }
-    ]
-  }
+  { nome: "Amarelo", valor: "bg-yellow-500" },
+  { nome: "Ciano", valor: "bg-cyan-500" },
+  { nome: "Indigo", valor: "bg-indigo-500" },
+  { nome: "Esmeralda", valor: "bg-emerald-500" },
+  { nome: "Violeta", valor: "bg-violet-500" },
+  { nome: "Âmbar", valor: "bg-amber-500" },
 ];
 
 const CRM = () => {
-  const [colunas, setColunas] = usePersistentState<Coluna[]>("fly-crm-kanban-v2", colunasIniciais);
+  const [colunas, setColunas] = useState<Coluna[]>([]);
+  const [loading, setLoading] = useState(true);
   const [draggedItem, setDraggedItem] = useState<{ colunaId: string; clienteId: string } | null>(null);
   const [dragOverColuna, setDragOverColuna] = useState<string | null>(null);
   
@@ -181,7 +110,7 @@ const CRM = () => {
   const [colunaEditando, setColunaEditando] = useState<Coluna | null>(null);
   
   // Form state
-  const [formCliente, setFormCliente] = useState<Partial<Cliente>>({
+  const [formCliente, setFormCliente] = useState({
     nome: "",
     empresa: "",
     ticket: 0,
@@ -194,6 +123,45 @@ const CRM = () => {
   
   const [formColuna, setFormColuna] = useState({ titulo: "", cor: "bg-blue-500" });
 
+  const fetchData = async () => {
+    // Buscar colunas
+    const { data: colunasData, error: colunasError } = await supabase
+      .from('crm_colunas')
+      .select('*')
+      .order('ordem');
+
+    if (colunasError) {
+      console.error('Erro ao buscar colunas:', colunasError);
+      toast.error('Erro ao carregar colunas');
+      return;
+    }
+
+    // Buscar clientes
+    const { data: clientesData, error: clientesError } = await supabase
+      .from('crm_clientes')
+      .select('*')
+      .order('created_at');
+
+    if (clientesError) {
+      console.error('Erro ao buscar clientes:', clientesError);
+      toast.error('Erro ao carregar clientes');
+      return;
+    }
+
+    // Organizar clientes por coluna
+    const colunasComClientes: Coluna[] = (colunasData || []).map(col => ({
+      ...col,
+      clientes: (clientesData || []).filter(c => c.coluna_id === col.id)
+    }));
+
+    setColunas(colunasComClientes);
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
   const formatCurrency = (value: number) => {
     return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   };
@@ -205,8 +173,6 @@ const CRM = () => {
     }
     return nome.substring(0, 2).toUpperCase();
   };
-
-  const gerarId = () => Math.random().toString(36).substring(2, 9);
 
   // Drag and Drop
   const handleDragStart = (e: React.DragEvent, colunaId: string, clienteId: string) => {
@@ -224,7 +190,7 @@ const CRM = () => {
     setDragOverColuna(null);
   };
 
-  const handleDrop = (e: React.DragEvent, targetColunaId: string) => {
+  const handleDrop = async (e: React.DragEvent, targetColunaId: string) => {
     e.preventDefault();
     setDragOverColuna(null);
     
@@ -234,21 +200,20 @@ const CRM = () => {
       return;
     }
 
-    setColunas(prevColunas => {
-      const newColunas = prevColunas.map(c => ({...c, clientes: [...c.clientes]}));
-      
-      const sourceColIndex = newColunas.findIndex(c => c.id === draggedItem.colunaId);
-      const clientIndex = newColunas[sourceColIndex].clientes.findIndex(c => c.id === draggedItem.clienteId);
-      const [cliente] = newColunas[sourceColIndex].clientes.splice(clientIndex, 1);
-      
-      const targetColIndex = newColunas.findIndex(c => c.id === targetColunaId);
-      newColunas[targetColIndex].clientes.push(cliente);
-      
-      return newColunas;
-    });
+    // Atualizar no banco
+    const { error } = await supabase
+      .from('crm_clientes')
+      .update({ coluna_id: targetColunaId })
+      .eq('id', draggedItem.clienteId);
 
-    const targetColuna = colunas.find(c => c.id === targetColunaId);
-    toast.success(`Cliente movido para ${targetColuna?.titulo}`);
+    if (error) {
+      toast.error('Erro ao mover cliente');
+    } else {
+      const targetColuna = colunas.find(c => c.id === targetColunaId);
+      toast.success(`Cliente movido para ${targetColuna?.titulo}`);
+      fetchData();
+    }
+    
     setDraggedItem(null);
   };
 
@@ -274,10 +239,19 @@ const CRM = () => {
     setClienteModalOpen(true);
   };
 
-  const abrirModalEditarCliente = (cliente: Cliente, colunaId: string) => {
+  const abrirModalEditarCliente = (cliente: Cliente) => {
     setClienteEditando(cliente);
-    setColunaDestino(colunaId);
-    setFormCliente({...cliente});
+    setColunaDestino(cliente.coluna_id);
+    setFormCliente({
+      nome: cliente.nome,
+      empresa: cliente.empresa,
+      ticket: Number(cliente.ticket) || 0,
+      responsavel: cliente.responsavel || "",
+      servico: cliente.servico || "",
+      telefone: cliente.telefone || "",
+      email: cliente.email || "",
+      observacoes: cliente.observacoes || ""
+    });
     setClienteModalOpen(true);
   };
 
@@ -286,7 +260,7 @@ const CRM = () => {
     setDetalhesModalOpen(true);
   };
 
-  const salvarCliente = () => {
+  const salvarCliente = async () => {
     if (!formCliente.nome || !formCliente.empresa || !formCliente.responsavel || !formCliente.servico) {
       toast.error("Preencha todos os campos obrigatórios");
       return;
@@ -296,53 +270,68 @@ const CRM = () => {
     
     if (clienteEditando) {
       // Editar
-      setColunas(prev => prev.map(col => ({
-        ...col,
-        clientes: col.clientes.map(c => 
-          c.id === clienteEditando.id 
-            ? {
-                ...c,
-                ...formCliente,
-                iniciais: gerarIniciais(formCliente.nome || ""),
-              } as Cliente
-            : c
-        )
-      })));
-      toast.success("Cliente atualizado com sucesso");
+      const { error } = await supabase
+        .from('crm_clientes')
+        .update({
+          nome: formCliente.nome,
+          empresa: formCliente.empresa,
+          ticket: formCliente.ticket,
+          responsavel: formCliente.responsavel,
+          iniciais: gerarIniciais(formCliente.nome),
+          servico: formCliente.servico,
+          telefone: formCliente.telefone,
+          email: formCliente.email,
+          observacoes: formCliente.observacoes
+        })
+        .eq('id', clienteEditando.id);
+
+      if (error) {
+        toast.error('Erro ao atualizar cliente');
+      } else {
+        toast.success("Cliente atualizado com sucesso");
+        fetchData();
+      }
     } else {
       // Criar
-      const novoCliente: Cliente = {
-        id: gerarId(),
-        nome: formCliente.nome || "",
-        empresa: formCliente.empresa || "",
-        ticket: formCliente.ticket || 0,
-        responsavel: formCliente.responsavel || "",
-        iniciais: gerarIniciais(formCliente.nome || ""),
-        dataContato: hoje,
-        servico: formCliente.servico || "",
-        telefone: formCliente.telefone,
-        email: formCliente.email,
-        observacoes: formCliente.observacoes
-      };
+      const { error } = await supabase
+        .from('crm_clientes')
+        .insert({
+          coluna_id: colunaDestino,
+          nome: formCliente.nome,
+          empresa: formCliente.empresa,
+          ticket: formCliente.ticket,
+          responsavel: formCliente.responsavel,
+          iniciais: gerarIniciais(formCliente.nome),
+          data_contato: hoje,
+          servico: formCliente.servico,
+          telefone: formCliente.telefone,
+          email: formCliente.email,
+          observacoes: formCliente.observacoes
+        });
 
-      setColunas(prev => prev.map(col => 
-        col.id === colunaDestino 
-          ? { ...col, clientes: [...col.clientes, novoCliente] }
-          : col
-      ));
-      toast.success("Cliente adicionado com sucesso");
+      if (error) {
+        toast.error('Erro ao adicionar cliente');
+      } else {
+        toast.success("Cliente adicionado com sucesso");
+        fetchData();
+      }
     }
     
     setClienteModalOpen(false);
   };
 
-  const excluirCliente = (clienteId: string, colunaId: string) => {
-    setColunas(prev => prev.map(col => 
-      col.id === colunaId 
-        ? { ...col, clientes: col.clientes.filter(c => c.id !== clienteId) }
-        : col
-    ));
-    toast.success("Cliente removido");
+  const excluirCliente = async (clienteId: string) => {
+    const { error } = await supabase
+      .from('crm_clientes')
+      .delete()
+      .eq('id', clienteId);
+
+    if (error) {
+      toast.error('Erro ao excluir cliente');
+    } else {
+      toast.success("Cliente removido");
+      fetchData();
+    }
   };
 
   // CRUD de Colunas
@@ -358,50 +347,81 @@ const CRM = () => {
     setColunaModalOpen(true);
   };
 
-  const salvarColuna = () => {
+  const salvarColuna = async () => {
     if (!formColuna.titulo) {
       toast.error("Digite o nome da coluna");
       return;
     }
 
     if (colunaEditando) {
-      setColunas(prev => prev.map(col => 
-        col.id === colunaEditando.id 
-          ? { ...col, titulo: formColuna.titulo, cor: formColuna.cor }
-          : col
-      ));
-      toast.success("Coluna atualizada");
+      const { error } = await supabase
+        .from('crm_colunas')
+        .update({ titulo: formColuna.titulo, cor: formColuna.cor })
+        .eq('id', colunaEditando.id);
+
+      if (error) {
+        toast.error('Erro ao atualizar coluna');
+      } else {
+        toast.success("Coluna atualizada");
+        fetchData();
+      }
     } else {
-      const novaColuna: Coluna = {
-        id: gerarId(),
-        titulo: formColuna.titulo,
-        cor: formColuna.cor,
-        clientes: []
-      };
-      setColunas(prev => [...prev, novaColuna]);
-      toast.success("Coluna adicionada");
+      const maxOrdem = Math.max(...colunas.map(c => c.ordem), -1);
+      const { error } = await supabase
+        .from('crm_colunas')
+        .insert({
+          titulo: formColuna.titulo,
+          cor: formColuna.cor,
+          ordem: maxOrdem + 1
+        });
+
+      if (error) {
+        toast.error('Erro ao adicionar coluna');
+      } else {
+        toast.success("Coluna adicionada");
+        fetchData();
+      }
     }
     
     setColunaModalOpen(false);
   };
 
-  const excluirColuna = (colunaId: string) => {
+  const excluirColuna = async (colunaId: string) => {
     const coluna = colunas.find(c => c.id === colunaId);
     if (coluna && coluna.clientes.length > 0) {
       toast.error("Mova os clientes antes de excluir a coluna");
       return;
     }
-    setColunas(prev => prev.filter(c => c.id !== colunaId));
-    toast.success("Coluna removida");
+
+    const { error } = await supabase
+      .from('crm_colunas')
+      .delete()
+      .eq('id', colunaId);
+
+    if (error) {
+      toast.error('Erro ao excluir coluna');
+    } else {
+      toast.success("Coluna removida");
+      fetchData();
+    }
   };
 
   // Stats
   const totalTicket = colunas.reduce((acc, col) => 
-    acc + col.clientes.reduce((sum, c) => sum + c.ticket, 0), 0
+    acc + col.clientes.reduce((sum, c) => sum + Number(c.ticket || 0), 0), 0
   );
   const totalClientes = colunas.reduce((acc, col) => acc + col.clientes.length, 0);
-  const clientesFechados = colunas.find(c => c.id === "fechado")?.clientes.length || 0;
-  const ticketFechado = colunas.find(c => c.id === "fechado")?.clientes.reduce((sum, c) => sum + c.ticket, 0) || 0;
+  const colunaFechado = colunas.find(c => c.titulo.toLowerCase().includes('fechado'));
+  const clientesFechados = colunaFechado?.clientes.length || 0;
+  const ticketFechado = colunaFechado?.clientes.reduce((sum, c) => sum + Number(c.ticket || 0), 0) || 0;
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p className="text-muted-foreground">Carregando...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -516,28 +536,26 @@ const CRM = () => {
                           draggable
                           onDragStart={(e) => handleDragStart(e, coluna.id, cliente.id)}
                           onDragEnd={handleDragEnd}
-                          className={`cursor-grab active:cursor-grabbing hover-lift bg-card border shadow-sm hover:shadow-purple transition-all ${
-                            draggedItem?.clienteId === cliente.id ? 'opacity-50 rotate-2' : ''
-                          }`}
+                          className="cursor-grab active:cursor-grabbing hover:shadow-md transition-all group"
                         >
-                          <CardContent className="p-4">
-                            <div className="flex items-start justify-between mb-3">
-                              <div className="flex items-center gap-3">
-                                <GripVertical className="w-4 h-4 text-muted-foreground/50" />
-                                <Avatar className="w-10 h-10 bg-gradient-to-br from-primary to-accent">
-                                  <AvatarFallback className="text-xs font-bold text-primary-foreground bg-transparent">
+                          <CardContent className="p-3">
+                            <div className="flex items-start justify-between mb-2">
+                              <div className="flex items-center gap-2">
+                                <GripVertical className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                                <Avatar className="w-8 h-8 bg-primary/10">
+                                  <AvatarFallback className="text-xs font-medium text-primary bg-transparent">
                                     {cliente.iniciais}
                                   </AvatarFallback>
                                 </Avatar>
                                 <div>
-                                  <p className="font-semibold text-sm text-foreground">{cliente.nome}</p>
+                                  <p className="font-medium text-sm">{cliente.nome}</p>
                                   <p className="text-xs text-muted-foreground">{cliente.empresa}</p>
                                 </div>
                               </div>
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="h-8 w-8">
-                                    <MoreHorizontal className="w-4 h-4" />
+                                  <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100">
+                                    <MoreHorizontal className="w-3 h-3" />
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
@@ -545,340 +563,314 @@ const CRM = () => {
                                     <Eye className="w-4 h-4 mr-2" />
                                     Ver detalhes
                                   </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => abrirModalEditarCliente(cliente, coluna.id)}>
+                                  <DropdownMenuItem onClick={() => abrirModalEditarCliente(cliente)}>
                                     <Pencil className="w-4 h-4 mr-2" />
                                     Editar
                                   </DropdownMenuItem>
                                   <DropdownMenuItem 
-                                    onClick={() => excluirCliente(cliente.id, coluna.id)}
+                                    onClick={() => excluirCliente(cliente.id)}
                                     className="text-destructive"
                                   >
                                     <Trash2 className="w-4 h-4 mr-2" />
-                                    Remover
+                                    Excluir
                                   </DropdownMenuItem>
                                 </DropdownMenuContent>
                               </DropdownMenu>
                             </div>
-                            
-                            <div className="space-y-2">
-                              <Badge variant="outline" className="text-xs">
-                                {cliente.servico}
-                              </Badge>
-                              
-                              <div className="flex items-center justify-between text-xs">
-                                <div className="flex items-center gap-1 text-muted-foreground">
-                                  <DollarSign className="w-3 h-3" />
-                                  <span className="font-semibold text-foreground">{formatCurrency(cliente.ticket)}</span>
-                                  <span>/mês</span>
-                                </div>
+                            <div className="space-y-1 text-xs">
+                              <div className="flex items-center gap-1 text-primary font-medium">
+                                <DollarSign className="w-3 h-3" />
+                                {formatCurrency(Number(cliente.ticket || 0))}
                               </div>
-                              
-                              <div className="flex items-center justify-between text-xs pt-2 border-t border-border">
-                                <div className="flex items-center gap-1 text-muted-foreground">
-                                  <User className="w-3 h-3" />
-                                  {cliente.responsavel.split(' ')[0]}
-                                </div>
-                                <div className="flex items-center gap-1 text-muted-foreground">
-                                  <Calendar className="w-3 h-3" />
-                                  {cliente.dataContato}
-                                </div>
+                              <div className="flex items-center gap-1 text-muted-foreground">
+                                <User className="w-3 h-3" />
+                                {cliente.responsavel}
+                              </div>
+                              <div className="flex items-center gap-1 text-muted-foreground">
+                                <Calendar className="w-3 h-3" />
+                                {cliente.data_contato}
                               </div>
                             </div>
+                            {cliente.servico && (
+                              <Badge variant="outline" className="mt-2 text-xs">
+                                {cliente.servico}
+                              </Badge>
+                            )}
                           </CardContent>
                         </Card>
                       ))}
+                      {coluna.clientes.length === 0 && (
+                        <div className="text-center py-8 text-muted-foreground text-sm">
+                          Arraste clientes aqui ou clique em + para adicionar
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 </div>
               ))}
-              
-              {/* Add Column Button */}
-              <div className="w-80 flex-shrink-0">
-                <Card 
-                  className="bg-secondary/10 border-dashed border-2 cursor-pointer hover:bg-secondary/20 transition-all min-h-[300px] flex items-center justify-center"
-                  onClick={abrirModalNovaColuna}
-                >
-                  <div className="text-center text-muted-foreground">
-                    <Plus className="w-8 h-8 mx-auto mb-2" />
-                    <p>Adicionar Coluna</p>
-                  </div>
-                </Card>
-              </div>
             </div>
           </div>
         </main>
       </div>
 
-      {/* Modal Cliente */}
-      <Dialog open={clienteModalOpen} onOpenChange={setClienteModalOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+      <WhatsAppButton />
+
+      {/* Modal de Configuração */}
+      <Dialog open={configModalOpen} onOpenChange={setConfigModalOpen}>
+        <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>
-              {clienteEditando ? "Editar Cliente" : "Novo Cliente"}
-            </DialogTitle>
+            <DialogTitle>Configurar Pipeline</DialogTitle>
           </DialogHeader>
-          
-          <div className="grid gap-4 py-4">
+          <div className="space-y-4 py-4">
+            <Button onClick={abrirModalNovaColuna} className="w-full">
+              <Plus className="w-4 h-4 mr-2" />
+              Adicionar Nova Coluna
+            </Button>
+            <div className="space-y-2">
+              <p className="text-sm font-medium">Colunas existentes:</p>
+              {colunas.map((coluna) => (
+                <div key={coluna.id} className="flex items-center justify-between p-2 bg-secondary/30 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <div className={`w-3 h-3 rounded-full ${coluna.cor}`} />
+                    <span className="text-sm">{coluna.titulo}</span>
+                    <Badge variant="secondary" className="text-xs">{coluna.clientes.length}</Badge>
+                  </div>
+                  <div className="flex gap-1">
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => abrirModalEditarColuna(coluna)}>
+                      <Pencil className="w-3 h-3" />
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-7 w-7 text-destructive"
+                      onClick={() => excluirColuna(coluna.id)}
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Coluna */}
+      <Dialog open={colunaModalOpen} onOpenChange={setColunaModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{colunaEditando ? "Editar Coluna" : "Nova Coluna"}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <Label>Nome da Coluna</Label>
+              <Input
+                value={formColuna.titulo}
+                onChange={(e) => setFormColuna(prev => ({ ...prev, titulo: e.target.value }))}
+                placeholder="Ex: Em Análise"
+              />
+            </div>
+            <div>
+              <Label>Cor</Label>
+              <Select 
+                value={formColuna.cor} 
+                onValueChange={(value) => setFormColuna(prev => ({ ...prev, cor: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {coresDisponiveis.map((cor) => (
+                    <SelectItem key={cor.valor} value={cor.valor}>
+                      <div className="flex items-center gap-2">
+                        <div className={`w-3 h-3 rounded-full ${cor.valor}`} />
+                        {cor.nome}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setColunaModalOpen(false)}>Cancelar</Button>
+            <Button onClick={salvarColuna}>Salvar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Cliente */}
+      <Dialog open={clienteModalOpen} onOpenChange={setClienteModalOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{clienteEditando ? "Editar Cliente" : "Novo Cliente"}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto">
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="nome">Nome *</Label>
-                <Input 
-                  id="nome"
-                  value={formCliente.nome || ""}
-                  onChange={(e) => setFormCliente({...formCliente, nome: e.target.value})}
+              <div>
+                <Label>Nome *</Label>
+                <Input
+                  value={formCliente.nome}
+                  onChange={(e) => setFormCliente(prev => ({ ...prev, nome: e.target.value }))}
                   placeholder="Nome do cliente"
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="empresa">Empresa *</Label>
-                <Input 
-                  id="empresa"
-                  value={formCliente.empresa || ""}
-                  onChange={(e) => setFormCliente({...formCliente, empresa: e.target.value})}
+              <div>
+                <Label>Empresa *</Label>
+                <Input
+                  value={formCliente.empresa}
+                  onChange={(e) => setFormCliente(prev => ({ ...prev, empresa: e.target.value }))}
                   placeholder="Nome da empresa"
                 />
               </div>
             </div>
-            
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="ticket">Ticket Mensal (R$) *</Label>
-                <Input 
-                  id="ticket"
+              <div>
+                <Label>Ticket (R$)</Label>
+                <Input
                   type="number"
-                  value={formCliente.ticket || ""}
-                  onChange={(e) => setFormCliente({...formCliente, ticket: Number(e.target.value)})}
-                  placeholder="0"
+                  value={formCliente.ticket}
+                  onChange={(e) => setFormCliente(prev => ({ ...prev, ticket: Number(e.target.value) }))}
                 />
               </div>
-              <div className="space-y-2">
+              <div>
                 <Label>Responsável *</Label>
                 <Select 
-                  value={formCliente.responsavel}
-                  onValueChange={(value) => setFormCliente({...formCliente, responsavel: value})}
+                  value={formCliente.responsavel} 
+                  onValueChange={(value) => setFormCliente(prev => ({ ...prev, responsavel: value }))}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione" />
                   </SelectTrigger>
                   <SelectContent>
-                    {responsaveisDisponiveis.map(resp => (
-                      <SelectItem key={resp} value={resp}>{resp}</SelectItem>
+                    {responsaveisDisponiveis.map((r) => (
+                      <SelectItem key={r} value={r}>{r}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
             </div>
-            
-            <div className="space-y-2">
+            <div>
               <Label>Serviço *</Label>
               <Select 
-                value={formCliente.servico}
-                onValueChange={(value) => setFormCliente({...formCliente, servico: value})}
+                value={formCliente.servico} 
+                onValueChange={(value) => setFormCliente(prev => ({ ...prev, servico: value }))}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione o serviço" />
                 </SelectTrigger>
                 <SelectContent>
-                  {servicosDisponiveis.map(serv => (
-                    <SelectItem key={serv} value={serv}>{serv}</SelectItem>
+                  {servicosDisponiveis.map((s) => (
+                    <SelectItem key={s} value={s}>{s}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-            
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="telefone">Telefone</Label>
-                <Input 
-                  id="telefone"
-                  value={formCliente.telefone || ""}
-                  onChange={(e) => setFormCliente({...formCliente, telefone: e.target.value})}
+              <div>
+                <Label>Telefone</Label>
+                <Input
+                  value={formCliente.telefone}
+                  onChange={(e) => setFormCliente(prev => ({ ...prev, telefone: e.target.value }))}
                   placeholder="(00) 00000-0000"
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input 
-                  id="email"
+              <div>
+                <Label>Email</Label>
+                <Input
                   type="email"
-                  value={formCliente.email || ""}
-                  onChange={(e) => setFormCliente({...formCliente, email: e.target.value})}
+                  value={formCliente.email}
+                  onChange={(e) => setFormCliente(prev => ({ ...prev, email: e.target.value }))}
                   placeholder="email@exemplo.com"
                 />
               </div>
             </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="observacoes">Observações</Label>
-              <Input 
-                id="observacoes"
-                value={formCliente.observacoes || ""}
-                onChange={(e) => setFormCliente({...formCliente, observacoes: e.target.value})}
-                placeholder="Notas sobre o cliente"
+            <div>
+              <Label>Observações</Label>
+              <Textarea
+                value={formCliente.observacoes}
+                onChange={(e) => setFormCliente(prev => ({ ...prev, observacoes: e.target.value }))}
+                placeholder="Anotações sobre o cliente..."
+                rows={3}
               />
             </div>
           </div>
-          
           <DialogFooter>
-            <Button variant="outline" onClick={() => setClienteModalOpen(false)}>
-              Cancelar
-            </Button>
-            <Button onClick={salvarCliente}>
-              {clienteEditando ? "Salvar" : "Adicionar"}
-            </Button>
+            <Button variant="outline" onClick={() => setClienteModalOpen(false)}>Cancelar</Button>
+            <Button onClick={salvarCliente}>Salvar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Modal Detalhes */}
+      {/* Modal de Detalhes */}
       <Dialog open={detalhesModalOpen} onOpenChange={setDetalhesModalOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-3">
-              <Avatar className="w-12 h-12 bg-gradient-to-br from-primary to-accent">
-                <AvatarFallback className="text-sm font-bold text-primary-foreground bg-transparent">
-                  {clienteVisualizando?.iniciais}
-                </AvatarFallback>
-              </Avatar>
-              <div>
-                <p>{clienteVisualizando?.nome}</p>
-                <p className="text-sm font-normal text-muted-foreground">{clienteVisualizando?.empresa}</p>
-              </div>
-            </DialogTitle>
+            <DialogTitle>Detalhes do Cliente</DialogTitle>
           </DialogHeader>
-          
           {clienteVisualizando && (
             <div className="space-y-4 py-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <p className="text-xs text-muted-foreground">Ticket Mensal</p>
-                  <p className="font-semibold text-primary">{formatCurrency(clienteVisualizando.ticket)}</p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-xs text-muted-foreground">Serviço</p>
-                  <Badge variant="outline">{clienteVisualizando.servico}</Badge>
+              <div className="flex items-center gap-4">
+                <Avatar className="w-16 h-16 bg-primary/10">
+                  <AvatarFallback className="text-xl font-bold text-primary bg-transparent">
+                    {clienteVisualizando.iniciais}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <h3 className="text-xl font-semibold">{clienteVisualizando.nome}</h3>
+                  <p className="text-muted-foreground">{clienteVisualizando.empresa}</p>
                 </div>
               </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <p className="text-xs text-muted-foreground">Responsável</p>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className="text-muted-foreground">Ticket</p>
+                  <p className="font-medium text-primary">{formatCurrency(Number(clienteVisualizando.ticket || 0))}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Responsável</p>
                   <p className="font-medium">{clienteVisualizando.responsavel}</p>
                 </div>
-                <div className="space-y-1">
-                  <p className="text-xs text-muted-foreground">Data de Contato</p>
-                  <p className="font-medium">{clienteVisualizando.dataContato}</p>
+                <div>
+                  <p className="text-muted-foreground">Serviço</p>
+                  <p className="font-medium">{clienteVisualizando.servico}</p>
                 </div>
+                <div>
+                  <p className="text-muted-foreground">Data de Contato</p>
+                  <p className="font-medium">{clienteVisualizando.data_contato}</p>
+                </div>
+                {clienteVisualizando.telefone && (
+                  <div>
+                    <p className="text-muted-foreground">Telefone</p>
+                    <p className="font-medium">{clienteVisualizando.telefone}</p>
+                  </div>
+                )}
+                {clienteVisualizando.email && (
+                  <div>
+                    <p className="text-muted-foreground">Email</p>
+                    <p className="font-medium">{clienteVisualizando.email}</p>
+                  </div>
+                )}
               </div>
-              
-              {(clienteVisualizando.telefone || clienteVisualizando.email) && (
-                <div className="grid grid-cols-2 gap-4 pt-2 border-t">
-                  {clienteVisualizando.telefone && (
-                    <div className="space-y-1">
-                      <p className="text-xs text-muted-foreground">Telefone</p>
-                      <p className="font-medium">{clienteVisualizando.telefone}</p>
-                    </div>
-                  )}
-                  {clienteVisualizando.email && (
-                    <div className="space-y-1">
-                      <p className="text-xs text-muted-foreground">Email</p>
-                      <p className="font-medium text-sm">{clienteVisualizando.email}</p>
-                    </div>
-                  )}
-                </div>
-              )}
-              
               {clienteVisualizando.observacoes && (
-                <div className="pt-2 border-t space-y-1">
-                  <p className="text-xs text-muted-foreground">Observações</p>
-                  <p className="text-sm">{clienteVisualizando.observacoes}</p>
+                <div>
+                  <p className="text-muted-foreground text-sm">Observações</p>
+                  <p className="mt-1 text-sm bg-secondary/30 p-3 rounded-lg">{clienteVisualizando.observacoes}</p>
                 </div>
               )}
             </div>
           )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Modal Configurações */}
-      <Dialog open={configModalOpen} onOpenChange={setConfigModalOpen}>
-        <DialogContent className="sm:max-w-[400px]">
-          <DialogHeader>
-            <DialogTitle>Configurações do CRM</DialogTitle>
-          </DialogHeader>
-          
-          <div className="space-y-4 py-4">
-            <p className="text-sm text-muted-foreground">
-              Gerencie as colunas do pipeline clicando no menu de cada coluna, ou adicione novas colunas usando o botão + no final do kanban.
-            </p>
-            
-            <div className="space-y-2">
-              <p className="font-medium text-sm">Colunas atuais:</p>
-              {colunas.map((col) => (
-                <div key={col.id} className="flex items-center gap-2 p-2 rounded bg-secondary/30">
-                  <div className={`w-3 h-3 rounded-full ${col.cor}`} />
-                  <span className="flex-1">{col.titulo}</span>
-                  <Badge variant="secondary">{col.clientes.length}</Badge>
-                </div>
-              ))}
-            </div>
-            
-            <Button onClick={abrirModalNovaColuna} className="w-full">
-              <Plus className="w-4 h-4 mr-2" />
-              Nova Coluna
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Modal Nova/Editar Coluna */}
-      <Dialog open={colunaModalOpen} onOpenChange={setColunaModalOpen}>
-        <DialogContent className="sm:max-w-[400px]">
-          <DialogHeader>
-            <DialogTitle>
-              {colunaEditando ? "Editar Coluna" : "Nova Coluna"}
-            </DialogTitle>
-          </DialogHeader>
-          
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="tituloColuna">Nome da Coluna</Label>
-              <Input 
-                id="tituloColuna"
-                value={formColuna.titulo}
-                onChange={(e) => setFormColuna({...formColuna, titulo: e.target.value})}
-                placeholder="Ex: Em Análise"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label>Cor</Label>
-              <div className="flex gap-2 flex-wrap">
-                {coresDisponiveis.map((cor) => (
-                  <button
-                    key={cor.valor}
-                    onClick={() => setFormColuna({...formColuna, cor: cor.valor})}
-                    className={`w-8 h-8 rounded-full ${cor.valor} transition-all ${
-                      formColuna.cor === cor.valor ? 'ring-2 ring-offset-2 ring-foreground' : ''
-                    }`}
-                    title={cor.nome}
-                  />
-                ))}
-              </div>
-            </div>
-          </div>
-          
           <DialogFooter>
-            <Button variant="outline" onClick={() => setColunaModalOpen(false)}>
-              Cancelar
-            </Button>
-            <Button onClick={salvarColuna}>
-              {colunaEditando ? "Salvar" : "Adicionar"}
+            <Button variant="outline" onClick={() => setDetalhesModalOpen(false)}>Fechar</Button>
+            <Button onClick={() => {
+              setDetalhesModalOpen(false);
+              if (clienteVisualizando) abrirModalEditarCliente(clienteVisualizando);
+            }}>
+              <Pencil className="w-4 h-4 mr-2" />
+              Editar
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      <WhatsAppButton />
     </div>
   );
 };
