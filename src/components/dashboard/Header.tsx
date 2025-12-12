@@ -1,12 +1,17 @@
-import { User, Menu } from "lucide-react";
+import { User, Menu, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { Sidebar } from "./Sidebar";
 import { NotificationsPopover } from "./NotificationsPopover";
 import { SearchCommand } from "./SearchCommand";
+import { useAuth } from "@/hooks/useAuth";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { useNavigate } from "react-router-dom";
 
 export function Header() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { signOut, user } = useAuth();
+  const navigate = useNavigate();
   
   const currentDate = new Date().toLocaleDateString('pt-BR', {
     weekday: 'long',
@@ -14,6 +19,11 @@ export function Header() {
     month: 'long',
     day: 'numeric'
   });
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate('/auth');
+  };
 
   return (
     <>
@@ -41,9 +51,22 @@ export function Header() {
           <div className="flex items-center gap-1 md:gap-3 shrink-0">
             <SearchCommand />
             <NotificationsPopover />
-            <Button variant="ghost" size="icon" className="rounded-full bg-primary/10">
-              <User className="w-4 h-4 md:w-5 md:h-5 text-primary" />
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="rounded-full bg-primary/10">
+                  <User className="w-4 h-4 md:w-5 md:h-5 text-primary" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem className="text-xs text-muted-foreground">
+                  {user?.email}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleLogout} className="text-destructive">
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Sair
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </header>
