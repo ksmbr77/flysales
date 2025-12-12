@@ -14,6 +14,47 @@ export type Database = {
   }
   public: {
     Tables: {
+      acoes_trimestrais: {
+        Row: {
+          concluida: boolean
+          created_at: string
+          id: string
+          meta_trimestral_id: string
+          titulo: string
+          updated_at: string
+          valor_atual: number
+          valor_meta: number
+        }
+        Insert: {
+          concluida?: boolean
+          created_at?: string
+          id?: string
+          meta_trimestral_id: string
+          titulo: string
+          updated_at?: string
+          valor_atual?: number
+          valor_meta?: number
+        }
+        Update: {
+          concluida?: boolean
+          created_at?: string
+          id?: string
+          meta_trimestral_id?: string
+          titulo?: string
+          updated_at?: string
+          valor_atual?: number
+          valor_meta?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "acoes_trimestrais_meta_trimestral_id_fkey"
+            columns: ["meta_trimestral_id"]
+            isOneToOne: false
+            referencedRelation: "metas_trimestrais"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crm_clientes: {
         Row: {
           coluna_id: string
@@ -148,6 +189,54 @@ export type Database = {
           mes?: string
           updated_at?: string
           valor?: number
+        }
+        Relationships: []
+      }
+      metas_trimestrais: {
+        Row: {
+          ano: number
+          created_at: string
+          id: string
+          meta_clientes_max: number
+          meta_clientes_min: number
+          meta_faturamento_max: number
+          meta_faturamento_min: number
+          meta_ticket_max: number
+          meta_ticket_min: number
+          periodo: string
+          progresso: number
+          trimestre: string
+          updated_at: string
+        }
+        Insert: {
+          ano?: number
+          created_at?: string
+          id?: string
+          meta_clientes_max?: number
+          meta_clientes_min?: number
+          meta_faturamento_max?: number
+          meta_faturamento_min?: number
+          meta_ticket_max?: number
+          meta_ticket_min?: number
+          periodo: string
+          progresso?: number
+          trimestre: string
+          updated_at?: string
+        }
+        Update: {
+          ano?: number
+          created_at?: string
+          id?: string
+          meta_clientes_max?: number
+          meta_clientes_min?: number
+          meta_faturamento_max?: number
+          meta_faturamento_min?: number
+          meta_ticket_max?: number
+          meta_ticket_min?: number
+          periodo?: string
+          progresso?: number
+          trimestre?: string
+          updated_at?: string
         }
         Relationships: []
       }

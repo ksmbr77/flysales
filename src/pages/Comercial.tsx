@@ -17,6 +17,16 @@ import {
   DialogFooter,
   DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { 
   Target, 
   TrendingUp, 
@@ -28,7 +38,9 @@ import {
   Pencil,
   Calendar,
   CheckCircle,
-  MessageCircle
+  MessageCircle,
+  Plus,
+  Trash2
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { getMesAtual } from "@/lib/dateUtils";
@@ -50,7 +62,6 @@ interface Vendedor {
   reunioes_fechadas: number;
 }
 
-// Componente de stat card memoizado
 const StatCard = memo(({ icon: Icon, label, value, bgColor, iconColor }: {
   icon: React.ElementType;
   label: string;
@@ -72,16 +83,34 @@ const StatCard = memo(({ icon: Icon, label, value, bgColor, iconColor }: {
     </CardContent>
   </Card>
 ));
-
 StatCard.displayName = "StatCard";
+
+const CORES = [
+  "from-primary to-accent",
+  "from-purple-500 to-pink-500",
+  "from-blue-500 to-cyan-500",
+  "from-orange-500 to-red-500",
+  "from-green-500 to-teal-500",
+  "from-indigo-500 to-purple-500"
+];
 
 const Comercial = () => {
   const [vendedores, setVendedores] = useState<Vendedor[]>([]);
   const [loading, setLoading] = useState(true);
   const [editModalOpen, setEditModalOpen] = useState(false);
+  const [addModalOpen, setAddModalOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [vendedorEditando, setVendedorEditando] = useState<Vendedor | null>(null);
+  const [vendedorParaDeletar, setVendedorParaDeletar] = useState<Vendedor | null>(null);
+  
   const [formData, setFormData] = useState({
-    meta_mensal: 0,
+    nome: '',
+    iniciais: '',
+    email: '',
+    telefone: '',
+    whatsapp: '',
+    cor: CORES[0],
+    meta_mensal: 15000,
     vendas_mes: 0,
     reunioes_agendadas: 0,
     reunioes_fechadas: 0,
@@ -96,7 +125,6 @@ const Comercial = () => {
       .order('nome');
     
     if (error) {
-      console.error('Erro ao buscar vendedores:', error);
       toast.error('Erro ao carregar vendedores');
     } else {
       setVendedores(data || []);
@@ -111,6 +139,12 @@ const Comercial = () => {
   const abrirModalEditar = useCallback((vendedor: Vendedor) => {
     setVendedorEditando(vendedor);
     setFormData({
+      nome: vendedor.nome,
+      iniciais: vendedor.iniciais,
+      email: vendedor.email || '',
+      telefone: vendedor.telefone || '',
+      whatsapp: vendedor.whatsapp || '',
+      cor: vendedor.cor || CORES[0],
       meta_mensal: Number(vendedor.meta_mensal) || 0,
       vendas_mes: Number(vendedor.vendas_mes) || 0,
       reunioes_agendadas: vendedor.reunioes_agendadas || 0,
@@ -121,12 +155,36 @@ const Comercial = () => {
     setEditModalOpen(true);
   }, []);
 
+  const abrirModalAdicionar = useCallback(() => {
+    setFormData({
+      nome: '',
+      iniciais: '',
+      email: '',
+      telefone: '',
+      whatsapp: '',
+      cor: CORES[Math.floor(Math.random() * CORES.length)],
+      meta_mensal: 15000,
+      vendas_mes: 0,
+      reunioes_agendadas: 0,
+      reunioes_fechadas: 0,
+      clientes_ativos: 0,
+      negocios_fechados: 0
+    });
+    setAddModalOpen(true);
+  }, []);
+
   const salvarVendedor = useCallback(async () => {
     if (!vendedorEditando) return;
 
     const { error } = await supabase
       .from('vendedores')
       .update({
+        nome: formData.nome,
+        iniciais: formData.iniciais,
+        email: formData.email || null,
+        telefone: formData.telefone || null,
+        whatsapp: formData.whatsapp || null,
+        cor: formData.cor,
         meta_mensal: formData.meta_mensal,
         vendas_mes: formData.vendas_mes,
         reunioes_agendadas: formData.reunioes_agendadas,
@@ -139,11 +197,66 @@ const Comercial = () => {
     if (error) {
       toast.error('Erro ao atualizar vendedor');
     } else {
-      toast.success('Vendedor atualizado com sucesso');
+      toast.success('Vendedor atualizado!');
       fetchVendedores();
       setEditModalOpen(false);
     }
   }, [vendedorEditando, formData, fetchVendedores]);
+
+  const adicionarVendedor = useCallback(async () => {
+    if (!formData.nome.trim() || !formData.iniciais.trim()) {
+      toast.error('Nome e iniciais são obrigatórios');
+      return;
+    }
+
+    const { error } = await supabase
+      .from('vendedores')
+      .insert({
+        nome: formData.nome,
+        iniciais: formData.iniciais.toUpperCase().slice(0, 2),
+        email: formData.email || null,
+        telefone: formData.telefone || null,
+        whatsapp: formData.whatsapp || null,
+        cor: formData.cor,
+        meta_mensal: formData.meta_mensal,
+        vendas_mes: formData.vendas_mes,
+        reunioes_agendadas: formData.reunioes_agendadas,
+        reunioes_fechadas: formData.reunioes_fechadas,
+        clientes_ativos: formData.clientes_ativos,
+        negocios_fechados: formData.negocios_fechados
+      });
+
+    if (error) {
+      toast.error('Erro ao adicionar vendedor');
+    } else {
+      toast.success('Vendedor adicionado!');
+      fetchVendedores();
+      setAddModalOpen(false);
+    }
+  }, [formData, fetchVendedores]);
+
+  const confirmarExclusao = useCallback((vendedor: Vendedor) => {
+    setVendedorParaDeletar(vendedor);
+    setDeleteDialogOpen(true);
+  }, []);
+
+  const excluirVendedor = useCallback(async () => {
+    if (!vendedorParaDeletar) return;
+
+    const { error } = await supabase
+      .from('vendedores')
+      .delete()
+      .eq('id', vendedorParaDeletar.id);
+
+    if (error) {
+      toast.error('Erro ao excluir vendedor');
+    } else {
+      toast.success('Vendedor excluído!');
+      fetchVendedores();
+    }
+    setDeleteDialogOpen(false);
+    setVendedorParaDeletar(null);
+  }, [vendedorParaDeletar, fetchVendedores]);
 
   const openWhatsApp = useCallback((whatsapp: string | null, nome: string) => {
     if (!whatsapp) return;
@@ -169,6 +282,123 @@ const Comercial = () => {
     );
   }
 
+  const VendedorModal = ({ isEdit = false }: { isEdit?: boolean }) => (
+    <div className="space-y-4 py-4 max-h-[70vh] overflow-y-auto">
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label>Nome *</Label>
+          <Input
+            value={formData.nome}
+            onChange={(e) => setFormData(prev => ({ ...prev, nome: e.target.value }))}
+            placeholder="Nome completo"
+          />
+        </div>
+        <div>
+          <Label>Iniciais *</Label>
+          <Input
+            value={formData.iniciais}
+            maxLength={2}
+            onChange={(e) => setFormData(prev => ({ ...prev, iniciais: e.target.value.toUpperCase() }))}
+            placeholder="GF"
+          />
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label>Email</Label>
+          <Input
+            type="email"
+            value={formData.email}
+            onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+            placeholder="email@exemplo.com"
+          />
+        </div>
+        <div>
+          <Label>Telefone</Label>
+          <Input
+            value={formData.telefone}
+            onChange={(e) => setFormData(prev => ({ ...prev, telefone: e.target.value }))}
+            placeholder="+55 79 9999-9999"
+          />
+        </div>
+      </div>
+      <div>
+        <Label>WhatsApp (número completo)</Label>
+        <Input
+          value={formData.whatsapp}
+          onChange={(e) => setFormData(prev => ({ ...prev, whatsapp: e.target.value }))}
+          placeholder="5579999999999"
+        />
+      </div>
+      <div>
+        <Label>Cor do Perfil</Label>
+        <div className="flex flex-wrap gap-2 mt-2">
+          {CORES.map((cor) => (
+            <button
+              key={cor}
+              type="button"
+              className={`w-8 h-8 rounded-full bg-gradient-to-br ${cor} ${formData.cor === cor ? 'ring-2 ring-offset-2 ring-primary' : ''}`}
+              onClick={() => setFormData(prev => ({ ...prev, cor }))}
+            />
+          ))}
+        </div>
+      </div>
+      <div className="border-t pt-4">
+        <p className="text-sm font-medium mb-3">Métricas</p>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <Label>Meta Mensal (R$)</Label>
+            <Input
+              type="number"
+              value={formData.meta_mensal}
+              onChange={(e) => setFormData(prev => ({ ...prev, meta_mensal: Number(e.target.value) }))}
+            />
+          </div>
+          <div>
+            <Label>Vendas do Mês (R$)</Label>
+            <Input
+              type="number"
+              value={formData.vendas_mes}
+              onChange={(e) => setFormData(prev => ({ ...prev, vendas_mes: Number(e.target.value) }))}
+            />
+          </div>
+          <div>
+            <Label>Reuniões Agendadas</Label>
+            <Input
+              type="number"
+              value={formData.reunioes_agendadas}
+              onChange={(e) => setFormData(prev => ({ ...prev, reunioes_agendadas: Number(e.target.value) }))}
+            />
+          </div>
+          <div>
+            <Label>Reuniões Fechadas</Label>
+            <Input
+              type="number"
+              value={formData.reunioes_fechadas}
+              onChange={(e) => setFormData(prev => ({ ...prev, reunioes_fechadas: Number(e.target.value) }))}
+            />
+          </div>
+          <div>
+            <Label>Clientes Ativos</Label>
+            <Input
+              type="number"
+              value={formData.clientes_ativos}
+              onChange={(e) => setFormData(prev => ({ ...prev, clientes_ativos: Number(e.target.value) }))}
+            />
+          </div>
+          <div>
+            <Label>Negócios Fechados</Label>
+            <Input
+              type="number"
+              value={formData.negocios_fechados}
+              onChange={(e) => setFormData(prev => ({ ...prev, negocios_fechados: Number(e.target.value) }))}
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-background">
       <Sidebar />
@@ -177,57 +407,30 @@ const Comercial = () => {
         <Header />
         
         <main className="p-3 sm:p-4 md:p-6">
-          {/* Page Title */}
-          <div className="mb-4 sm:mb-6">
-            <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground flex items-center gap-2">
-              <Users className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 text-primary flex-shrink-0" />
-              <span className="truncate">Equipe Comercial</span>
-            </h2>
-            <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-              Gera reunião qualificada - Kauã fecha
-            </p>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 sm:mb-6">
+            <div>
+              <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground flex items-center gap-2">
+                <Users className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 text-primary flex-shrink-0" />
+                <span className="truncate">Equipe Comercial</span>
+              </h2>
+              <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+                Gera reunião qualificada - Kauã fecha
+              </p>
+            </div>
+            <Button onClick={abrirModalAdicionar} className="gradient-primary text-primary-foreground">
+              <Plus className="w-4 h-4 mr-2" />
+              Adicionar Vendedor
+            </Button>
           </div>
 
-          {/* Summary Stats */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3 md:gap-4 mb-4 sm:mb-6">
-            <StatCard 
-              icon={DollarSign} 
-              label="Vendas do Mês" 
-              value={formatCurrency(totalVendas)}
-              bgColor="gradient-primary"
-              iconColor="text-primary-foreground"
-            />
-            <StatCard 
-              icon={Target} 
-              label="Meta Total" 
-              value={formatCurrency(totalMeta)}
-              bgColor="bg-accent/20"
-              iconColor="text-accent"
-            />
-            <StatCard 
-              icon={Calendar} 
-              label="Reuniões" 
-              value={totalReunioes}
-              bgColor="bg-primary/20"
-              iconColor="text-primary"
-            />
-            <StatCard 
-              icon={Users} 
-              label="Clientes" 
-              value={totalClientes}
-              bgColor="bg-primary/20"
-              iconColor="text-primary"
-            />
-            <StatCard 
-              icon={Award} 
-              label="Fechados" 
-              value={totalNegocios}
-              bgColor="bg-warning/20"
-              iconColor="text-warning"
-            />
+            <StatCard icon={DollarSign} label="Vendas do Mês" value={formatCurrency(totalVendas)} bgColor="gradient-primary" iconColor="text-primary-foreground" />
+            <StatCard icon={Target} label="Meta Total" value={formatCurrency(totalMeta)} bgColor="bg-accent/20" iconColor="text-accent" />
+            <StatCard icon={Calendar} label="Reuniões" value={totalReunioes} bgColor="bg-primary/20" iconColor="text-primary" />
+            <StatCard icon={Users} label="Clientes" value={totalClientes} bgColor="bg-primary/20" iconColor="text-primary" />
+            <StatCard icon={Award} label="Fechados" value={totalNegocios} bgColor="bg-warning/20" iconColor="text-warning" />
           </div>
 
-          {/* Vendedores Cards */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
             {vendedores.map((vendedor, index) => {
               const porcentagem = vendedor.meta_mensal > 0 
@@ -238,12 +441,7 @@ const Comercial = () => {
               ));
               
               return (
-                <Card 
-                  key={vendedor.id} 
-                  className="hover-lift overflow-hidden animate-slide-up"
-                  style={{ animationDelay: `${index * 100}ms` }}
-                >
-                  {/* Header gradient */}
+                <Card key={vendedor.id} className="hover-lift overflow-hidden animate-slide-up" style={{ animationDelay: `${index * 100}ms` }}>
                   <div className={`h-1.5 sm:h-2 bg-gradient-to-r ${vendedor.cor || 'from-primary to-accent'}`} />
                   
                   <CardHeader className="pb-2 sm:pb-3 px-3 sm:px-6 pt-3 sm:pt-6">
@@ -267,19 +465,18 @@ const Comercial = () => {
                           <p className="text-xs sm:text-sm text-muted-foreground">Consultor</p>
                         </div>
                       </div>
-                      <Button 
-                        variant="ghost" 
-                        size="icon"
-                        className="h-7 w-7 sm:h-9 sm:w-9 flex-shrink-0"
-                        onClick={() => abrirModalEditar(vendedor)}
-                      >
-                        <Pencil className="w-3 h-3 sm:w-4 sm:h-4" />
-                      </Button>
+                      <div className="flex gap-1">
+                        <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-9 sm:w-9 flex-shrink-0" onClick={() => abrirModalEditar(vendedor)}>
+                          <Pencil className="w-3 h-3 sm:w-4 sm:h-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-9 sm:w-9 flex-shrink-0 text-destructive hover:text-destructive" onClick={() => confirmarExclusao(vendedor)}>
+                          <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
+                        </Button>
+                      </div>
                     </div>
                   </CardHeader>
                   
                   <CardContent className="space-y-3 sm:space-y-4 px-3 sm:px-6 pb-3 sm:pb-6">
-                    {/* Contact Info */}
                     <div className="flex flex-col sm:flex-row flex-wrap gap-1.5 sm:gap-3 text-xs sm:text-sm text-muted-foreground">
                       {vendedor.email && (
                         <div className="flex items-center gap-1.5 min-w-0">
@@ -295,7 +492,6 @@ const Comercial = () => {
                       )}
                     </div>
 
-                    {/* WhatsApp Button */}
                     {vendedor.whatsapp && (
                       <Button 
                         variant="outline" 
@@ -308,7 +504,6 @@ const Comercial = () => {
                       </Button>
                     )}
 
-                    {/* Meta Progress */}
                     <div className="space-y-2 sm:space-y-3">
                       <div className="flex items-center justify-between">
                         <span className="text-xs sm:text-sm font-medium flex items-center gap-1.5">
@@ -317,10 +512,7 @@ const Comercial = () => {
                         </span>
                         <span className="text-xs sm:text-sm font-bold text-primary">{porcentagem.toFixed(0)}%</span>
                       </div>
-                      <Progress 
-                        value={Math.min(porcentagem, 100)} 
-                        className="h-2 sm:h-3"
-                      />
+                      <Progress value={Math.min(porcentagem, 100)} className="h-2 sm:h-3" />
                       <div className="flex justify-between text-[10px] sm:text-xs">
                         <span className="text-muted-foreground">
                           <span className="font-semibold text-foreground">{formatCurrency(Number(vendedor.vendas_mes || 0))}</span>
@@ -331,7 +523,6 @@ const Comercial = () => {
                       </div>
                     </div>
 
-                    {/* Stats Grid */}
                     <div className="grid grid-cols-2 gap-2 sm:gap-3 pt-3 sm:pt-4 border-t border-border">
                       <div className="text-center p-2 sm:p-3 rounded-xl bg-secondary/50">
                         <div className="flex items-center justify-center gap-1 text-muted-foreground text-[10px] sm:text-xs mb-0.5 sm:mb-1">
@@ -372,81 +563,53 @@ const Comercial = () => {
 
       <WhatsAppButton />
 
-      {/* Modal de Edição */}
+      {/* Modal Editar */}
       <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
-        <DialogContent className="max-w-[95vw] sm:max-w-md">
+        <DialogContent className="max-w-[95vw] sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle className="text-lg sm:text-xl">Editar {vendedorEditando?.nome}</DialogTitle>
-            <DialogDescription>Atualize os dados de vendas e metas</DialogDescription>
+            <DialogTitle>Editar Vendedor</DialogTitle>
+            <DialogDescription>Atualize as informações do vendedor</DialogDescription>
           </DialogHeader>
-          <div className="space-y-3 sm:space-y-4 py-3 sm:py-4">
-            <div className="grid grid-cols-2 gap-3 sm:gap-4">
-              <div>
-                <Label className="text-xs sm:text-sm">Meta Mensal (R$)</Label>
-                <Input
-                  type="number"
-                  className="h-9 sm:h-10 text-sm"
-                  value={formData.meta_mensal}
-                  onChange={(e) => setFormData(prev => ({ ...prev, meta_mensal: Number(e.target.value) }))}
-                />
-              </div>
-              <div>
-                <Label className="text-xs sm:text-sm">Vendas do Mês (R$)</Label>
-                <Input
-                  type="number"
-                  className="h-9 sm:h-10 text-sm"
-                  value={formData.vendas_mes}
-                  onChange={(e) => setFormData(prev => ({ ...prev, vendas_mes: Number(e.target.value) }))}
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3 sm:gap-4">
-              <div>
-                <Label className="text-xs sm:text-sm">Reuniões Agendadas</Label>
-                <Input
-                  type="number"
-                  className="h-9 sm:h-10 text-sm"
-                  value={formData.reunioes_agendadas}
-                  onChange={(e) => setFormData(prev => ({ ...prev, reunioes_agendadas: Number(e.target.value) }))}
-                />
-              </div>
-              <div>
-                <Label className="text-xs sm:text-sm">Reuniões Fechadas</Label>
-                <Input
-                  type="number"
-                  className="h-9 sm:h-10 text-sm"
-                  value={formData.reunioes_fechadas}
-                  onChange={(e) => setFormData(prev => ({ ...prev, reunioes_fechadas: Number(e.target.value) }))}
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3 sm:gap-4">
-              <div>
-                <Label className="text-xs sm:text-sm">Clientes Ativos</Label>
-                <Input
-                  type="number"
-                  className="h-9 sm:h-10 text-sm"
-                  value={formData.clientes_ativos}
-                  onChange={(e) => setFormData(prev => ({ ...prev, clientes_ativos: Number(e.target.value) }))}
-                />
-              </div>
-              <div>
-                <Label className="text-xs sm:text-sm">Negócios Fechados</Label>
-                <Input
-                  type="number"
-                  className="h-9 sm:h-10 text-sm"
-                  value={formData.negocios_fechados}
-                  onChange={(e) => setFormData(prev => ({ ...prev, negocios_fechados: Number(e.target.value) }))}
-                />
-              </div>
-            </div>
-          </div>
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" size="sm" onClick={() => setEditModalOpen(false)}>Cancelar</Button>
-            <Button size="sm" onClick={salvarVendedor}>Salvar</Button>
+          <VendedorModal isEdit />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditModalOpen(false)}>Cancelar</Button>
+            <Button onClick={salvarVendedor} className="gradient-primary text-primary-foreground">Salvar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Modal Adicionar */}
+      <Dialog open={addModalOpen} onOpenChange={setAddModalOpen}>
+        <DialogContent className="max-w-[95vw] sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Adicionar Vendedor</DialogTitle>
+            <DialogDescription>Preencha as informações do novo vendedor</DialogDescription>
+          </DialogHeader>
+          <VendedorModal />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddModalOpen(false)}>Cancelar</Button>
+            <Button onClick={adicionarVendedor} className="gradient-primary text-primary-foreground">Adicionar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Confirmar Exclusão */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir Vendedor</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir {vendedorParaDeletar?.nome}? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={excluirVendedor} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
