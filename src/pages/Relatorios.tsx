@@ -2,7 +2,7 @@ import { useRef } from "react";
 import { Sidebar } from "@/components/dashboard/Sidebar";
 import { Header } from "@/components/dashboard/Header";
 import { SalesChart } from "@/components/dashboard/SalesChart";
-import { ProductRanking } from "@/components/dashboard/ProductRanking";
+import { MonthMetrics } from "@/components/dashboard/MonthMetrics";
 import { WhatsAppButton } from "@/components/dashboard/WhatsAppButton";
 import { Card } from "@/components/ui/card";
 import { FileText, Download, Calendar, TrendingUp, Users, Target } from "lucide-react";
@@ -129,9 +129,9 @@ const Relatorios = () => {
           </div>
 
           {/* Gráficos */}
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 md:gap-6">
+          <div className="space-y-4 md:space-y-6">
+            <MonthMetrics />
             <SalesChart />
-            <ProductRanking />
           </div>
           </div>
         </main>

@@ -24,7 +24,8 @@ const Auth = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [otpToken, setOtpToken] = useState('');
-  const { signIn, signUp, user, resetPassword, verifyOtp, updatePassword } = useAuth();
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const { signIn, signUp, user, resetPassword, verifyOtp, updatePassword, resendOtp } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -32,6 +33,13 @@ const Auth = () => {
       navigate('/', { replace: true });
     }
   }, [user, navigate]);
+
+  useEffect(() => {
+    if (resendCooldown > 0) {
+      const timer = setTimeout(() => setResendCooldown(resendCooldown - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [resendCooldown]);
 
   const handleLogin = async () => {
     const emailValidation = emailSchema.safeParse(email);
@@ -113,6 +121,23 @@ const Auth = () => {
       } else {
         toast.success('Email confirmado com sucesso!');
         navigate('/');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendCode = async () => {
+    if (resendCooldown > 0) return;
+    
+    setLoading(true);
+    try {
+      const { error } = await resendOtp(email);
+      if (error) {
+        toast.error('Erro ao reenviar código');
+      } else {
+        toast.success('Código reenviado para seu email!');
+        setResendCooldown(60);
       }
     } finally {
       setLoading(false);
@@ -260,7 +285,7 @@ const Auth = () => {
 
             {/* OTP field - shown for verify-email and reset-password */}
             {(mode === 'verify-email' || mode === 'reset-password') && (
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <Label>Código de Verificação</Label>
                 <div className="flex justify-center">
                   <InputOTP
@@ -278,6 +303,21 @@ const Auth = () => {
                     </InputOTPGroup>
                   </InputOTP>
                 </div>
+                {mode === 'verify-email' && (
+                  <div className="text-center">
+                    <Button
+                      type="button"
+                      variant="link"
+                      className="text-primary hover:text-accent p-0 h-auto text-sm"
+                      onClick={handleResendCode}
+                      disabled={loading || resendCooldown > 0}
+                    >
+                      {resendCooldown > 0 
+                        ? `Reenviar código em ${resendCooldown}s` 
+                        : 'Não recebeu? Reenviar código'}
+                    </Button>
+                  </div>
+                )}
               </div>
             )}
             
