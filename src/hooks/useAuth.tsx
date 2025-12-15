@@ -12,6 +12,7 @@ interface AuthContextType {
   resetPassword: (email: string) => Promise<{ error: Error | null }>;
   verifyOtp: (email: string, token: string, type: EmailOtpType) => Promise<{ error: Error | null }>;
   updatePassword: (password: string) => Promise<{ error: Error | null }>;
+  resendOtp: (email: string) => Promise<{ error: Error | null }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -68,6 +69,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return { error: error as Error | null };
   };
 
+  const resendOtp = async (email: string) => {
+    const { error } = await supabase.auth.resend({ type: 'signup', email });
+    return { error: error as Error | null };
+  };
+
   return (
     <AuthContext.Provider value={{ 
       user, 
@@ -78,7 +84,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       signOut, 
       resetPassword, 
       verifyOtp, 
-      updatePassword 
+      updatePassword,
+      resendOtp 
     }}>
       {children}
     </AuthContext.Provider>

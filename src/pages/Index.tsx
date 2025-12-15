@@ -2,7 +2,7 @@ import { Sidebar } from "@/components/dashboard/Sidebar";
 import { Header } from "@/components/dashboard/Header";
 import { EditableStatCard } from "@/components/dashboard/EditableStatCard";
 import { EditableGoalProgress } from "@/components/dashboard/EditableGoalProgress";
-import { ProductRanking } from "@/components/dashboard/ProductRanking";
+import { MonthMetrics } from "@/components/dashboard/MonthMetrics";
 import { SalesChart } from "@/components/dashboard/SalesChart";
 import { WhatsAppButton } from "@/components/dashboard/WhatsAppButton";
 import { 
@@ -97,11 +97,13 @@ const Index = () => {
             />
           </div>
           
-          {/* Charts and Ranking */}
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 md:gap-6">
-            <SalesChart />
-            <ProductRanking />
+          {/* Month Metrics */}
+          <div className="mb-4 md:mb-6">
+            <MonthMetrics />
           </div>
+
+          {/* Chart */}
+          <SalesChart />
         </main>
       </div>
       
