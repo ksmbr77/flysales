@@ -45,6 +45,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
+import { validateClienteForm } from "@/lib/validations/crm";
 
 interface Cliente {
   id: string;
@@ -360,26 +361,30 @@ const CRM = () => {
   }, []);
 
   const salvarCliente = useCallback(async () => {
-    if (!formCliente.nome || !formCliente.empresa || !formCliente.responsavel || !formCliente.servico) {
-      toast.error("Preencha todos os campos obrigatórios");
+    // Validate form data using zod schema
+    const validationResult = validateClienteForm(formCliente);
+    
+    if (validationResult.success === false) {
+      validationResult.errors.forEach((error) => toast.error(error));
       return;
     }
 
+    const validatedData = validationResult.data;
     const hoje = new Date().toLocaleDateString('pt-BR');
     
     if (clienteEditando) {
       const { error } = await supabase
         .from('crm_clientes')
         .update({
-          nome: formCliente.nome,
-          empresa: formCliente.empresa,
-          ticket: formCliente.ticket,
-          responsavel: formCliente.responsavel,
-          iniciais: gerarIniciais(formCliente.nome),
-          servico: formCliente.servico,
-          telefone: formCliente.telefone,
-          email: formCliente.email,
-          observacoes: formCliente.observacoes
+          nome: validatedData.nome,
+          empresa: validatedData.empresa,
+          ticket: validatedData.ticket,
+          responsavel: validatedData.responsavel,
+          iniciais: gerarIniciais(validatedData.nome),
+          servico: validatedData.servico,
+          telefone: validatedData.telefone,
+          email: validatedData.email,
+          observacoes: validatedData.observacoes
         })
         .eq('id', clienteEditando.id);
 
@@ -394,16 +399,16 @@ const CRM = () => {
         .from('crm_clientes')
         .insert({
           coluna_id: colunaDestino,
-          nome: formCliente.nome,
-          empresa: formCliente.empresa,
-          ticket: formCliente.ticket,
-          responsavel: formCliente.responsavel,
-          iniciais: gerarIniciais(formCliente.nome),
+          nome: validatedData.nome,
+          empresa: validatedData.empresa,
+          ticket: validatedData.ticket,
+          responsavel: validatedData.responsavel,
+          iniciais: gerarIniciais(validatedData.nome),
           data_contato: hoje,
-          servico: formCliente.servico,
-          telefone: formCliente.telefone,
-          email: formCliente.email,
-          observacoes: formCliente.observacoes
+          servico: validatedData.servico,
+          telefone: validatedData.telefone,
+          email: validatedData.email,
+          observacoes: validatedData.observacoes
         });
 
       if (error) {
