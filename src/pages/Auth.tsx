@@ -25,14 +25,31 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
   const [otpToken, setOtpToken] = useState('');
   const [resendCooldown, setResendCooldown] = useState(0);
-  const { signIn, signUp, user, resetPassword, verifyOtp, updatePassword, resendOtp } = useAuth();
+  const [isRecoverySession, setIsRecoverySession] = useState(false);
+  const { signIn, signUp, user, session, resetPassword, verifyOtp, updatePassword, resendOtp } = useAuth();
   const navigate = useNavigate();
 
+  // Check for password recovery session from email link
   useEffect(() => {
-    if (user) {
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const type = hashParams.get('type');
+    
+    if (type === 'recovery') {
+      setIsRecoverySession(true);
+      setMode('reset-password');
+    }
+  }, []);
+
+  useEffect(() => {
+    // If user is logged in via recovery link, allow password reset
+    if (user && isRecoverySession) {
+      return;
+    }
+    // Otherwise redirect authenticated users to home
+    if (user && !isRecoverySession) {
       navigate('/', { replace: true });
     }
-  }, [user, navigate]);
+  }, [user, navigate, isRecoverySession]);
 
   useEffect(() => {
     if (resendCooldown > 0) {
@@ -166,10 +183,6 @@ const Auth = () => {
   };
 
   const handleResetPassword = async () => {
-    if (otpToken.length !== 6) {
-      toast.error('Digite o código completo de 6 dígitos');
-      return;
-    }
     const passwordValidation = passwordSchema.safeParse(password);
     if (!passwordValidation.success) {
       toast.error(passwordValidation.error.errors[0].message);
@@ -182,18 +195,19 @@ const Auth = () => {
 
     setLoading(true);
     try {
-      const { error: verifyError } = await verifyOtp(email, otpToken, 'recovery');
-      if (verifyError) {
-        toast.error('Código inválido ou expirado');
-        return;
-      }
-      
-      const { error: updateError } = await updatePassword(password);
-      if (updateError) {
-        toast.error('Erro ao atualizar senha');
+      // If user came from recovery link, they're already authenticated
+      if (isRecoverySession && user) {
+        const { error: updateError } = await updatePassword(password);
+        if (updateError) {
+          toast.error('Erro ao atualizar senha');
+        } else {
+          toast.success('Senha atualizada com sucesso!');
+          setIsRecoverySession(false);
+          navigate('/');
+        }
       } else {
-        toast.success('Senha atualizada com sucesso!');
-        navigate('/');
+        toast.error('Sessão de recuperação inválida. Solicite um novo link.');
+        setMode('forgot-password');
       }
     } finally {
       setLoading(false);
@@ -237,7 +251,9 @@ const Auth = () => {
       case 'signup': return 'Crie sua conta para acessar o dashboard';
       case 'verify-email': return `Digite o código enviado para ${email}`;
       case 'forgot-password': return 'Digite seu email para recuperar a senha';
-      case 'reset-password': return `Digite o código enviado para ${email}`;
+      case 'reset-password': return isRecoverySession 
+        ? 'Digite sua nova senha abaixo' 
+        : 'Clique no link enviado para seu email';
     }
   };
 
@@ -283,8 +299,8 @@ const Auth = () => {
               </div>
             )}
 
-            {/* OTP field - shown for verify-email and reset-password */}
-            {(mode === 'verify-email' || mode === 'reset-password') && (
+            {/* OTP field - shown only for verify-email */}
+            {mode === 'verify-email' && (
               <div className="space-y-3">
                 <Label>Código de Verificação</Label>
                 <div className="flex justify-center">
@@ -303,26 +319,36 @@ const Auth = () => {
                     </InputOTPGroup>
                   </InputOTP>
                 </div>
-                {mode === 'verify-email' && (
-                  <div className="text-center">
-                    <Button
-                      type="button"
-                      variant="link"
-                      className="text-primary hover:text-accent p-0 h-auto text-sm"
-                      onClick={handleResendCode}
-                      disabled={loading || resendCooldown > 0}
-                    >
-                      {resendCooldown > 0 
-                        ? `Reenviar código em ${resendCooldown}s` 
-                        : 'Não recebeu? Reenviar código'}
-                    </Button>
-                  </div>
-                )}
+                <div className="text-center">
+                  <Button
+                    type="button"
+                    variant="link"
+                    className="text-primary hover:text-accent p-0 h-auto text-sm"
+                    onClick={handleResendCode}
+                    disabled={loading || resendCooldown > 0}
+                  >
+                    {resendCooldown > 0 
+                      ? `Reenviar código em ${resendCooldown}s` 
+                      : 'Não recebeu? Reenviar código'}
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Message for reset-password when user hasn't clicked link yet */}
+            {mode === 'reset-password' && !isRecoverySession && (
+              <div className="text-center py-4">
+                <Mail className="w-12 h-12 mx-auto text-primary mb-3" />
+                <p className="text-muted-foreground">
+                  Um link de recuperação foi enviado para seu email.
+                  <br />
+                  Clique no link para redefinir sua senha.
+                </p>
               </div>
             )}
             
             {/* Password field - shown for login, signup, reset-password */}
-            {(mode === 'login' || mode === 'signup' || mode === 'reset-password') && (
+            {(mode === 'login' || mode === 'signup' || (mode === 'reset-password' && isRecoverySession)) && (
               <div className="space-y-2">
                 <Label htmlFor="password">{mode === 'reset-password' ? 'Nova Senha' : 'Senha'}</Label>
                 <div className="relative">
@@ -354,7 +380,7 @@ const Auth = () => {
             )}
 
             {/* Confirm password field - shown for signup and reset-password */}
-            {(mode === 'signup' || mode === 'reset-password') && (
+            {(mode === 'signup' || (mode === 'reset-password' && isRecoverySession)) && (
               <div className="space-y-2">
                 <Label htmlFor="confirmPassword">Confirmar Senha</Label>
                 <div className="relative">
@@ -389,7 +415,7 @@ const Auth = () => {
             <Button 
               type="submit" 
               className="w-full h-11 gradient-primary text-primary-foreground font-semibold"
-              disabled={loading}
+              disabled={loading || (mode === 'reset-password' && !isRecoverySession)}
             >
               {loading ? (
                 <span className="animate-pulse">Carregando...</span>
@@ -411,12 +437,17 @@ const Auth = () => {
               ) : mode === 'forgot-password' ? (
                 <>
                   <Mail className="w-4 h-4 mr-2" />
-                  Enviar Código
+                  Enviar Link de Recuperação
                 </>
-              ) : (
+              ) : isRecoverySession ? (
                 <>
                   <KeyRound className="w-4 h-4 mr-2" />
                   Atualizar Senha
+                </>
+              ) : (
+                <>
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Voltar ao Login
                 </>
               )}
             </Button>
