@@ -77,8 +77,6 @@ const servicosDisponiveis = [
   "Branding e Posicionamento"
 ];
 
-const responsaveisDisponiveis = ["Gustavo Fontes", "Davi Nascimento"];
-
 const coresDisponiveis = [
   { nome: "Azul", valor: "bg-blue-500" },
   { nome: "Roxo", valor: "bg-primary" },
@@ -196,8 +194,14 @@ const ClienteCard = memo(({
 
 ClienteCard.displayName = "ClienteCard";
 
+interface Vendedor {
+  id: string;
+  nome: string;
+}
+
 const CRM = () => {
   const [colunas, setColunas] = useState<Coluna[]>([]);
+  const [vendedores, setVendedores] = useState<Vendedor[]>([]);
   const [loading, setLoading] = useState(true);
   const [draggedItem, setDraggedItem] = useState<{ colunaId: string; clienteId: string } | null>(null);
   const [dragOverColuna, setDragOverColuna] = useState<string | null>(null);
@@ -228,34 +232,35 @@ const CRM = () => {
   const [formColuna, setFormColuna] = useState({ titulo: "", cor: "bg-blue-500" });
 
   const fetchData = useCallback(async () => {
-    const { data: colunasData, error: colunasError } = await supabase
-      .from('crm_colunas')
-      .select('*')
-      .order('ordem');
+    const [colunasRes, clientesRes, vendedoresRes] = await Promise.all([
+      supabase.from('crm_colunas').select('*').order('ordem'),
+      supabase.from('crm_clientes').select('*').order('created_at'),
+      supabase.from('vendedores').select('id, nome').order('nome')
+    ]);
 
-    if (colunasError) {
-      console.error('Erro ao buscar colunas:', colunasError);
+    if (colunasRes.error) {
+      console.error('Erro ao buscar colunas:', colunasRes.error);
       toast.error('Erro ao carregar colunas');
       return;
     }
 
-    const { data: clientesData, error: clientesError } = await supabase
-      .from('crm_clientes')
-      .select('*')
-      .order('created_at');
-
-    if (clientesError) {
-      console.error('Erro ao buscar clientes:', clientesError);
+    if (clientesRes.error) {
+      console.error('Erro ao buscar clientes:', clientesRes.error);
       toast.error('Erro ao carregar clientes');
       return;
     }
 
-    const colunasComClientes: Coluna[] = (colunasData || []).map(col => ({
+    if (vendedoresRes.error) {
+      console.error('Erro ao buscar vendedores:', vendedoresRes.error);
+    }
+
+    const colunasComClientes: Coluna[] = (colunasRes.data || []).map(col => ({
       ...col,
-      clientes: (clientesData || []).filter(c => c.coluna_id === col.id)
+      clientes: (clientesRes.data || []).filter(c => c.coluna_id === col.id)
     }));
 
     setColunas(colunasComClientes);
+    setVendedores(vendedoresRes.data || []);
     setLoading(false);
   }, []);
 
@@ -775,8 +780,8 @@ const CRM = () => {
                     <SelectValue placeholder="Selecione" />
                   </SelectTrigger>
                   <SelectContent className="z-50 bg-popover">
-                    {responsaveisDisponiveis.map((r) => (
-                      <SelectItem key={r} value={r}>{r}</SelectItem>
+                    {vendedores.map((v) => (
+                      <SelectItem key={v.id} value={v.nome}>{v.nome}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
