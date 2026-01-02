@@ -14,6 +14,7 @@ const Comercial = lazy(() => import("./pages/Comercial"));
 const CRM = lazy(() => import("./pages/CRM"));
 const Relatorios = lazy(() => import("./pages/Relatorios"));
 const Suporte = lazy(() => import("./pages/Suporte"));
+const Usuarios = lazy(() => import("./pages/Usuarios"));
 const Auth = lazy(() => import("./pages/Auth"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
@@ -50,6 +51,7 @@ const App = () => (
               <Route path="/metas" element={<ProtectedRoute><Metas /></ProtectedRoute>} />
               <Route path="/relatorios" element={<ProtectedRoute><Relatorios /></ProtectedRoute>} />
               <Route path="/suporte" element={<ProtectedRoute><Suporte /></ProtectedRoute>} />
+              <Route path="/usuarios" element={<ProtectedRoute><Usuarios /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
