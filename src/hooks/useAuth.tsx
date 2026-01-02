@@ -55,7 +55,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const resetPassword = async (email: string) => {
-    const redirectUrl = `${window.location.origin}/auth`;
+    // Use production URL if available, otherwise fallback to current origin
+    const productionUrl = 'https://flysales.lovable.app';
+    const redirectUrl = `${productionUrl}/auth`;
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: redirectUrl,
     });
