@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
 import { Header } from "@/components/dashboard/Header";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Users, Mail, Calendar, Clock } from "lucide-react";
+import { Users, Clock, Calendar, Mail, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { format } from "date-fns";
+import { format, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { Button } from "@/components/ui/button";
 
 interface Profile {
   id: string;
@@ -24,11 +24,12 @@ export default function Usuarios() {
   }, []);
 
   const fetchProfiles = async () => {
+    setLoading(true);
     try {
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('last_sign_in_at', { ascending: false, nullsFirst: false });
 
       if (error) throw error;
       setProfiles(data || []);
@@ -39,133 +40,116 @@ export default function Usuarios() {
     }
   };
 
-  const formatDate = (dateString: string | null) => {
-    if (!dateString) return '-';
-    return format(new Date(dateString), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR });
-  };
-
   const isOnlineRecently = (lastSignIn: string | null) => {
     if (!lastSignIn) return false;
-    const lastSignInDate = new Date(lastSignIn);
-    const now = new Date();
-    const diffHours = (now.getTime() - lastSignInDate.getTime()) / (1000 * 60 * 60);
+    const diffHours = (Date.now() - new Date(lastSignIn).getTime()) / (1000 * 60 * 60);
     return diffHours < 24;
   };
+
+  const formatRelativeTime = (dateString: string | null) => {
+    if (!dateString) return 'Nunca';
+    return formatDistanceToNow(new Date(dateString), { addSuffix: true, locale: ptBR });
+  };
+
+  const formatFullDate = (dateString: string) => {
+    return format(new Date(dateString), "dd/MM/yy", { locale: ptBR });
+  };
+
+  const activeCount = profiles.filter(p => isOnlineRecently(p.last_sign_in_at)).length;
+  const newThisMonth = profiles.filter(p => {
+    const createdAt = new Date(p.created_at);
+    const now = new Date();
+    return createdAt.getMonth() === now.getMonth() && createdAt.getFullYear() === now.getFullYear();
+  }).length;
 
   return (
     <div className="min-h-screen bg-background">
       <Header />
       
-      <main className="p-4 md:p-6 space-y-6">
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-primary/10">
-            <Users className="w-6 h-6 text-primary" />
+      <main className="p-4 md:p-6 max-w-4xl mx-auto space-y-4">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-primary/10">
+              <Users className="w-5 h-5 text-primary" />
+            </div>
+            <h1 className="text-xl font-semibold">Usuários</h1>
           </div>
-          <div>
-            <h2 className="text-2xl font-bold text-foreground">Usuários</h2>
-            <p className="text-muted-foreground">Visualize quem criou conta e está acessando o sistema</p>
-          </div>
+          <Button variant="ghost" size="icon" onClick={fetchProfiles} disabled={loading}>
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+          </Button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Total de Usuários
-              </CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{profiles.length}</div>
-            </CardContent>
+        {/* Stats Cards - Compact */}
+        <div className="grid grid-cols-3 gap-3">
+          <Card className="p-3">
+            <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
+              <Users className="w-3.5 h-3.5" />
+              <span>Total</span>
+            </div>
+            <p className="text-2xl font-bold">{profiles.length}</p>
           </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Ativos nas últimas 24h
-              </CardTitle>
-              <Clock className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-500">
-                {profiles.filter(p => isOnlineRecently(p.last_sign_in_at)).length}
-              </div>
-            </CardContent>
+          <Card className="p-3">
+            <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
+              <Clock className="w-3.5 h-3.5" />
+              <span>Ativos 24h</span>
+            </div>
+            <p className="text-2xl font-bold text-green-500">{activeCount}</p>
           </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Novos este mês
-              </CardTitle>
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-primary">
-                {profiles.filter(p => {
-                  const createdAt = new Date(p.created_at);
-                  const now = new Date();
-                  return createdAt.getMonth() === now.getMonth() && 
-                         createdAt.getFullYear() === now.getFullYear();
-                }).length}
-              </div>
-            </CardContent>
+          <Card className="p-3">
+            <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
+              <Calendar className="w-3.5 h-3.5" />
+              <span>Novos</span>
+            </div>
+            <p className="text-2xl font-bold text-primary">{newThisMonth}</p>
           </Card>
         </div>
 
+        {/* User List */}
         <Card>
-          <CardHeader>
-            <CardTitle>Lista de Usuários</CardTitle>
-          </CardHeader>
-          <CardContent>
+          <CardContent className="p-0">
             {loading ? (
-              <div className="flex justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              <div className="flex justify-center py-12">
+                <RefreshCw className="w-6 h-6 animate-spin text-muted-foreground" />
               </div>
             ) : profiles.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <Users className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                <p>Nenhum usuário registrado ainda.</p>
-                <p className="text-sm">Novos usuários aparecerão aqui ao criar conta.</p>
+              <div className="text-center py-12 text-muted-foreground">
+                <Users className="w-10 h-10 mx-auto mb-2 opacity-40" />
+                <p className="text-sm">Nenhum usuário ainda</p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Data de Cadastro</TableHead>
-                      <TableHead>Último Acesso</TableHead>
-                      <TableHead>Status</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {profiles.map((profile) => (
-                      <TableRow key={profile.id}>
-                        <TableCell className="font-medium">
-                          <div className="flex items-center gap-2">
-                            <Mail className="w-4 h-4 text-muted-foreground" />
-                            {profile.email || '-'}
-                          </div>
-                        </TableCell>
-                        <TableCell>{formatDate(profile.created_at)}</TableCell>
-                        <TableCell>{formatDate(profile.last_sign_in_at)}</TableCell>
-                        <TableCell>
-                          {isOnlineRecently(profile.last_sign_in_at) ? (
-                            <Badge className="bg-green-500/10 text-green-500 hover:bg-green-500/20">
-                              Ativo recentemente
-                            </Badge>
-                          ) : (
-                            <Badge variant="secondary">
-                              Inativo
-                            </Badge>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+              <div className="divide-y divide-border">
+                {profiles.map((profile) => (
+                  <div key={profile.id} className="flex items-center justify-between p-4 hover:bg-muted/30 transition-colors">
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                        <Mail className="w-4 h-4 text-primary" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium text-sm truncate">{profile.email || '-'}</p>
+                        <p className="text-xs text-muted-foreground">
+                          Cadastro: {formatFullDate(profile.created_at)}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 shrink-0">
+                      <div className="text-right hidden sm:block">
+                        <p className="text-xs text-muted-foreground">
+                          {formatRelativeTime(profile.last_sign_in_at)}
+                        </p>
+                      </div>
+                      {isOnlineRecently(profile.last_sign_in_at) ? (
+                        <Badge className="bg-green-500/10 text-green-600 border-0 text-xs">
+                          Ativo
+                        </Badge>
+                      ) : (
+                        <Badge variant="secondary" className="text-xs">
+                          Inativo
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </CardContent>
