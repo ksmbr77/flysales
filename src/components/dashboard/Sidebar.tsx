@@ -9,7 +9,8 @@ import {
   X,
   Rocket,
   Instagram,
-  Globe
+  Globe,
+  UserCheck
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { NavLink, useLocation } from "react-router-dom";
@@ -22,6 +23,7 @@ const menuItems = [
   { icon: Target, label: "Metas", path: "/metas" },
   { icon: TrendingUp, label: "Relatórios", path: "/relatorios" },
   { icon: HelpCircle, label: "Suporte", path: "/suporte" },
+  { icon: UserCheck, label: "Usuários", path: "/usuarios" },
 ];
 
 interface SidebarProps {
