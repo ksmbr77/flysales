@@ -35,7 +35,15 @@ import {
   Pencil,
   Trash2,
   Eye,
-  Settings
+  Settings,
+  TrendingDown,
+  Globe,
+  Users,
+  MessageSquare,
+  Mail,
+  Target,
+  Zap,
+  Percent
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -46,6 +54,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { validateClienteForm } from "@/lib/validations/crm";
+import { BusinessHealthCard } from "@/components/crm/BusinessHealthCard";
+import { PipelineStats } from "@/components/crm/PipelineStats";
+import { LossReasonModal } from "@/components/crm/LossReasonModal";
+import { ChurnAlertsCard } from "@/components/crm/ChurnAlertsCard";
+import { LossAnalysisCard } from "@/components/crm/LossAnalysisCard";
+import { useNavigate } from "react-router-dom";
 
 interface Cliente {
   id: string;
@@ -60,6 +74,9 @@ interface Cliente {
   telefone: string | null;
   email: string | null;
   observacoes: string | null;
+  probabilidade?: number;
+  origem?: string;
+  tipo_cliente?: string;
 }
 
 interface Coluna {
@@ -67,7 +84,28 @@ interface Coluna {
   titulo: string;
   cor: string;
   ordem: number;
+  probabilidade?: number;
   clientes: Cliente[];
+}
+
+interface ClienteRisco {
+  id: string;
+  nome: string;
+  empresa: string;
+  valor_mensal: number;
+  sinais_risco: string[];
+}
+
+interface CrmConfig {
+  id?: string;
+  meta_mensal: number;
+  churn_mes_atual: number;
+}
+
+interface PerdaAnalise {
+  motivo: string;
+  quantidade: number;
+  percentual: number;
 }
 
 const servicosDisponiveis = [
@@ -75,6 +113,16 @@ const servicosDisponiveis = [
   "Funis de Vendas",
   "Marketing 360",
   "Branding e Posicionamento"
+];
+
+const origensDisponiveis = [
+  { value: "organico", label: "🌐 Orgânico", icon: Globe },
+  { value: "indicacao", label: "👥 Indicação", icon: Users },
+  { value: "trafego_pago", label: "💰 Tráfego Pago", icon: Target },
+  { value: "whatsapp", label: "💬 WhatsApp Direto", icon: MessageSquare },
+  { value: "email", label: "📧 E-mail Marketing", icon: Mail },
+  { value: "networking", label: "🎯 Networking/Eventos", icon: Zap },
+  { value: "outro", label: "✏️ Outro", icon: Pencil },
 ];
 
 const coresDisponiveis = [
@@ -92,105 +140,123 @@ const coresDisponiveis = [
   { nome: "Âmbar", valor: "bg-amber-500" },
 ];
 
-// Componente de stat memoizado
-const StatCard = memo(({ label, value, isPrimary = false }: { label: string; value: string | number; isPrimary?: boolean }) => (
-  <Card className="hover-lift">
-    <CardContent className="p-3 sm:p-4">
-      <p className="text-[10px] sm:text-xs text-muted-foreground truncate">{label}</p>
-      <p className={`text-base sm:text-xl font-bold truncate ${isPrimary ? 'text-primary' : 'text-foreground'}`}>{value}</p>
-    </CardContent>
-  </Card>
-));
-
-StatCard.displayName = "StatCard";
+const probabilidadesPorTitulo: Record<string, number> = {
+  "novos leads": 20,
+  "qualificados": 40,
+  "aguardando confirmação": 75,
+  "fechado": 100,
+};
 
 // Componente de card do cliente memoizado
 const ClienteCard = memo(({ 
   cliente, 
   colunaId,
+  probabilidade,
   onDragStart, 
   onDragEnd, 
   onView, 
   onEdit, 
   onDelete,
+  onMarkLost,
   formatCurrency 
 }: {
   cliente: Cliente;
   colunaId: string;
+  probabilidade: number;
   onDragStart: (e: React.DragEvent, colunaId: string, clienteId: string) => void;
   onDragEnd: () => void;
   onView: (cliente: Cliente) => void;
   onEdit: (cliente: Cliente) => void;
   onDelete: (clienteId: string) => void;
+  onMarkLost: (cliente: Cliente) => void;
   formatCurrency: (value: number) => string;
-}) => (
-  <Card
-    draggable
-    onDragStart={(e) => onDragStart(e, colunaId, cliente.id)}
-    onDragEnd={onDragEnd}
-    className="cursor-grab active:cursor-grabbing hover:shadow-md transition-all group"
-  >
-    <CardContent className="p-2 sm:p-3">
-      <div className="flex items-start justify-between mb-1.5 sm:mb-2 gap-1">
-        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
-          <GripVertical className="w-3 h-3 sm:w-4 sm:h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
-          <Avatar className="w-6 h-6 sm:w-8 sm:h-8 bg-primary/10 flex-shrink-0">
-            <AvatarFallback className="text-[10px] sm:text-xs font-medium text-primary bg-transparent">
-              {cliente.iniciais}
-            </AvatarFallback>
-          </Avatar>
-          <div className="min-w-0 flex-1">
-            <p className="font-medium text-xs sm:text-sm truncate">{cliente.nome}</p>
-            <p className="text-[10px] sm:text-xs text-muted-foreground truncate">{cliente.empresa}</p>
+}) => {
+  const valorProvavel = (Number(cliente.ticket) || 0) * (probabilidade / 100);
+  
+  return (
+    <Card
+      draggable
+      onDragStart={(e) => onDragStart(e, colunaId, cliente.id)}
+      onDragEnd={onDragEnd}
+      className="cursor-grab active:cursor-grabbing hover:shadow-md transition-all group"
+    >
+      <CardContent className="p-2 sm:p-3">
+        <div className="flex items-start justify-between mb-1.5 sm:mb-2 gap-1">
+          <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
+            <GripVertical className="w-3 h-3 sm:w-4 sm:h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+            <Avatar className="w-6 h-6 sm:w-8 sm:h-8 bg-primary/10 flex-shrink-0">
+              <AvatarFallback className="text-[10px] sm:text-xs font-medium text-primary bg-transparent">
+                {cliente.iniciais}
+              </AvatarFallback>
+            </Avatar>
+            <div className="min-w-0 flex-1">
+              <p className="font-medium text-xs sm:text-sm truncate">{cliente.nome}</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground truncate">{cliente.empresa}</p>
+            </div>
+          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-5 w-5 sm:h-6 sm:w-6 opacity-0 group-hover:opacity-100 flex-shrink-0">
+                <MoreHorizontal className="w-3 h-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="z-50 bg-popover">
+              <DropdownMenuItem onClick={() => onView(cliente)}>
+                <Eye className="w-4 h-4 mr-2" />
+                Ver detalhes
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onEdit(cliente)}>
+                <Pencil className="w-4 h-4 mr-2" />
+                Editar
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onMarkLost(cliente)} className="text-orange-500">
+                <TrendingDown className="w-4 h-4 mr-2" />
+                Marcar como perdido
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={() => onDelete(cliente.id)}
+                className="text-destructive"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Excluir
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+        <div className="space-y-0.5 sm:space-y-1 text-[10px] sm:text-xs">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1 text-primary font-medium">
+              <DollarSign className="w-2.5 h-2.5 sm:w-3 sm:h-3 flex-shrink-0" />
+              <span className="truncate">{formatCurrency(Number(cliente.ticket || 0))}</span>
+            </div>
+            <Badge variant="outline" className="text-[9px] px-1">
+              <Percent className="w-2 h-2 mr-0.5" />
+              {probabilidade}%
+            </Badge>
+          </div>
+          <div className="flex items-center gap-1 text-muted-foreground">
+            <User className="w-2.5 h-2.5 sm:w-3 sm:h-3 flex-shrink-0" />
+            <span className="truncate">{cliente.responsavel}</span>
+          </div>
+          <div className="flex items-center gap-1 text-muted-foreground">
+            <Calendar className="w-2.5 h-2.5 sm:w-3 sm:h-3 flex-shrink-0" />
+            <span className="truncate">{cliente.data_contato}</span>
           </div>
         </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-5 w-5 sm:h-6 sm:w-6 opacity-0 group-hover:opacity-100 flex-shrink-0">
-              <MoreHorizontal className="w-3 h-3" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="z-50 bg-popover">
-            <DropdownMenuItem onClick={() => onView(cliente)}>
-              <Eye className="w-4 h-4 mr-2" />
-              Ver detalhes
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onEdit(cliente)}>
-              <Pencil className="w-4 h-4 mr-2" />
-              Editar
-            </DropdownMenuItem>
-            <DropdownMenuItem 
-              onClick={() => onDelete(cliente.id)}
-              className="text-destructive"
-            >
-              <Trash2 className="w-4 h-4 mr-2" />
-              Excluir
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-      <div className="space-y-0.5 sm:space-y-1 text-[10px] sm:text-xs">
-        <div className="flex items-center gap-1 text-primary font-medium">
-          <DollarSign className="w-2.5 h-2.5 sm:w-3 sm:h-3 flex-shrink-0" />
-          <span className="truncate">{formatCurrency(Number(cliente.ticket || 0))}</span>
+        <div className="flex items-center justify-between mt-1.5 pt-1.5 border-t border-dashed">
+          {cliente.servico && (
+            <Badge variant="outline" className="text-[9px] sm:text-xs px-1.5 sm:px-2 py-0 truncate max-w-[60%]">
+              {cliente.servico}
+            </Badge>
+          )}
+          <span className="text-[9px] text-muted-foreground">
+            ~{formatCurrency(valorProvavel)}
+          </span>
         </div>
-        <div className="flex items-center gap-1 text-muted-foreground">
-          <User className="w-2.5 h-2.5 sm:w-3 sm:h-3 flex-shrink-0" />
-          <span className="truncate">{cliente.responsavel}</span>
-        </div>
-        <div className="flex items-center gap-1 text-muted-foreground">
-          <Calendar className="w-2.5 h-2.5 sm:w-3 sm:h-3 flex-shrink-0" />
-          <span className="truncate">{cliente.data_contato}</span>
-        </div>
-      </div>
-      {cliente.servico && (
-        <Badge variant="outline" className="mt-1.5 sm:mt-2 text-[9px] sm:text-xs px-1.5 sm:px-2 py-0 truncate max-w-full">
-          {cliente.servico}
-        </Badge>
-      )}
-    </CardContent>
-  </Card>
-));
+      </CardContent>
+    </Card>
+  );
+});
 
 ClienteCard.displayName = "ClienteCard";
 
@@ -200,8 +266,13 @@ interface Vendedor {
 }
 
 const CRM = () => {
+  const navigate = useNavigate();
   const [colunas, setColunas] = useState<Coluna[]>([]);
   const [vendedores, setVendedores] = useState<Vendedor[]>([]);
+  const [clientesAtivosRisco, setClientesAtivosRisco] = useState<ClienteRisco[]>([]);
+  const [config, setConfig] = useState<CrmConfig>({ meta_mensal: 30000, churn_mes_atual: 0 });
+  const [perdas, setPerdas] = useState<PerdaAnalise[]>([]);
+  const [totalPerdas, setTotalPerdas] = useState(0);
   const [loading, setLoading] = useState(true);
   const [draggedItem, setDraggedItem] = useState<{ colunaId: string; clienteId: string } | null>(null);
   const [dragOverColuna, setDragOverColuna] = useState<string | null>(null);
@@ -211,9 +282,11 @@ const CRM = () => {
   const [detalhesModalOpen, setDetalhesModalOpen] = useState(false);
   const [configModalOpen, setConfigModalOpen] = useState(false);
   const [colunaModalOpen, setColunaModalOpen] = useState(false);
+  const [lossReasonModalOpen, setLossReasonModalOpen] = useState(false);
   
   const [clienteEditando, setClienteEditando] = useState<Cliente | null>(null);
   const [clienteVisualizando, setClienteVisualizando] = useState<Cliente | null>(null);
+  const [clientePerdendo, setClientePerdendo] = useState<Cliente | null>(null);
   const [colunaDestino, setColunaDestino] = useState<string>("");
   const [colunaEditando, setColunaEditando] = useState<Coluna | null>(null);
   
@@ -226,16 +299,21 @@ const CRM = () => {
     servico: "",
     telefone: "",
     email: "",
-    observacoes: ""
+    observacoes: "",
+    origem: "organico",
+    tipo_cliente: "novo"
   });
   
   const [formColuna, setFormColuna] = useState({ titulo: "", cor: "bg-blue-500" });
 
   const fetchData = useCallback(async () => {
-    const [colunasRes, clientesRes, vendedoresRes] = await Promise.all([
+    const [colunasRes, clientesRes, vendedoresRes, configRes, clientesAtivosRes, perdasRes] = await Promise.all([
       supabase.from('crm_colunas').select('*').order('ordem'),
       supabase.from('crm_clientes').select('*').order('created_at'),
-      supabase.from('vendedores').select('id, nome').order('nome')
+      supabase.from('vendedores').select('id, nome').order('nome'),
+      supabase.from('crm_configuracoes').select('*').limit(1).maybeSingle(),
+      supabase.from('clientes_ativos').select('id, nome, empresa, valor_mensal, sinais_risco'),
+      supabase.from('crm_perdas').select('*').gte('data_perda', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
     ]);
 
     if (colunasRes.error) {
@@ -250,17 +328,52 @@ const CRM = () => {
       return;
     }
 
-    if (vendedoresRes.error) {
-      console.error('Erro ao buscar vendedores:', vendedoresRes.error);
-    }
-
-    const colunasComClientes: Coluna[] = (colunasRes.data || []).map(col => ({
-      ...col,
-      clientes: (clientesRes.data || []).filter(c => c.coluna_id === col.id)
-    }));
+    // Processar colunas com probabilidades
+    const colunasComClientes: Coluna[] = (colunasRes.data || []).map(col => {
+      const prob = col.probabilidade || probabilidadesPorTitulo[col.titulo.toLowerCase()] || 20;
+      return {
+        ...col,
+        probabilidade: prob,
+        clientes: (clientesRes.data || []).filter(c => c.coluna_id === col.id)
+      };
+    });
 
     setColunas(colunasComClientes);
     setVendedores(vendedoresRes.data || []);
+    
+    if (configRes.data) {
+      setConfig(configRes.data);
+    }
+
+    // Clientes em risco
+    const clientesRisco = (clientesAtivosRes.data || [])
+      .filter(c => (c.sinais_risco?.length || 0) >= 2)
+      .map(c => ({
+        ...c,
+        sinais_risco: c.sinais_risco || []
+      }));
+    setClientesAtivosRisco(clientesRisco);
+
+    // Análise de perdas
+    if (perdasRes.data && perdasRes.data.length > 0) {
+      const motivosCount: Record<string, number> = {};
+      perdasRes.data.forEach(p => {
+        motivosCount[p.motivo] = (motivosCount[p.motivo] || 0) + 1;
+      });
+      
+      const total = perdasRes.data.length;
+      const perdasAnalise = Object.entries(motivosCount)
+        .map(([motivo, quantidade]) => ({
+          motivo,
+          quantidade,
+          percentual: Math.round((quantidade / total) * 100)
+        }))
+        .sort((a, b) => b.quantidade - a.quantidade);
+      
+      setPerdas(perdasAnalise);
+      setTotalPerdas(total);
+    }
+
     setLoading(false);
   }, []);
 
@@ -279,6 +392,40 @@ const CRM = () => {
     }
     return nome.substring(0, 2).toUpperCase();
   }, []);
+
+  // Calcular estatísticas
+  const calcularEstatisticas = useCallback(() => {
+    let totalPipeline = 0;
+    let receitaProvavel = 0;
+    let totalLeadsAtivos = 0;
+    let negociosFechados = 0;
+    let valorFechado = 0;
+    
+    colunas.forEach(coluna => {
+      const prob = coluna.probabilidade || 20;
+      const isFechado = coluna.titulo.toLowerCase().includes('fechado');
+      
+      coluna.clientes.forEach(cliente => {
+        const ticket = Number(cliente.ticket) || 0;
+        totalPipeline += ticket;
+        receitaProvavel += ticket * (prob / 100);
+        
+        if (isFechado) {
+          negociosFechados++;
+          valorFechado += ticket;
+        } else {
+          totalLeadsAtivos++;
+        }
+      });
+    });
+
+    return { totalPipeline, receitaProvavel, totalLeadsAtivos, negociosFechados, valorFechado };
+  }, [colunas]);
+
+  const stats = calcularEstatisticas();
+
+  // MRR dos clientes ativos
+  const mrr = clientesAtivosRisco.reduce((acc, c) => acc + c.valor_mensal, 0);
 
   // Drag and Drop
   const handleDragStart = useCallback((e: React.DragEvent, colunaId: string, clienteId: string) => {
@@ -327,6 +474,56 @@ const CRM = () => {
     setDragOverColuna(null);
   }, []);
 
+  // Marcar como perdido
+  const abrirModalPerda = useCallback((cliente: Cliente) => {
+    setClientePerdendo(cliente);
+    setLossReasonModalOpen(true);
+  }, []);
+
+  const confirmarPerda = useCallback(async (motivo: string, detalhes: string) => {
+    if (!clientePerdendo) return;
+
+    const colunaAtual = colunas.find(c => c.id === clientePerdendo.coluna_id);
+    
+    // Salvar na tabela de perdas
+    const { error: perdaError } = await supabase.from('crm_perdas').insert({
+      lead_id: clientePerdendo.id,
+      nome: clientePerdendo.nome,
+      empresa: clientePerdendo.empresa,
+      valor: clientePerdendo.ticket,
+      motivo: motivo,
+      estagio_quando_perdeu: colunaAtual?.titulo || 'Desconhecido'
+    });
+
+    if (perdaError) {
+      console.error('Erro ao registrar perda:', perdaError);
+    }
+
+    // Atualizar o cliente com status de perdido
+    const { error } = await supabase
+      .from('crm_clientes')
+      .update({ 
+        status: 'perdido',
+        motivo_perda: motivo,
+        data_perda: new Date().toISOString(),
+        estagio_quando_perdeu: colunaAtual?.titulo
+      })
+      .eq('id', clientePerdendo.id);
+
+    // Remover do pipeline
+    await supabase.from('crm_clientes').delete().eq('id', clientePerdendo.id);
+
+    if (error) {
+      toast.error('Erro ao registrar perda');
+    } else {
+      toast.success('Perda registrada com sucesso');
+      fetchData();
+    }
+
+    setLossReasonModalOpen(false);
+    setClientePerdendo(null);
+  }, [clientePerdendo, colunas, fetchData]);
+
   // CRUD de Clientes
   const abrirModalNovoCliente = useCallback((colunaId: string) => {
     setClienteEditando(null);
@@ -339,7 +536,9 @@ const CRM = () => {
       servico: "",
       telefone: "",
       email: "",
-      observacoes: ""
+      observacoes: "",
+      origem: "organico",
+      tipo_cliente: "novo"
     });
     setClienteModalOpen(true);
   }, []);
@@ -355,7 +554,9 @@ const CRM = () => {
       servico: cliente.servico || "",
       telefone: cliente.telefone || "",
       email: cliente.email || "",
-      observacoes: cliente.observacoes || ""
+      observacoes: cliente.observacoes || "",
+      origem: cliente.origem || "organico",
+      tipo_cliente: cliente.tipo_cliente || "novo"
     });
     setClienteModalOpen(true);
   }, []);
@@ -366,7 +567,6 @@ const CRM = () => {
   }, []);
 
   const salvarCliente = useCallback(async () => {
-    // Validate form data using zod schema
     const validationResult = validateClienteForm(formCliente);
     
     if (validationResult.success === false) {
@@ -389,7 +589,9 @@ const CRM = () => {
           servico: validatedData.servico,
           telefone: validatedData.telefone,
           email: validatedData.email,
-          observacoes: validatedData.observacoes
+          observacoes: validatedData.observacoes,
+          origem: formCliente.origem,
+          tipo_cliente: formCliente.tipo_cliente
         })
         .eq('id', clienteEditando.id);
 
@@ -413,7 +615,10 @@ const CRM = () => {
           servico: validatedData.servico,
           telefone: validatedData.telefone,
           email: validatedData.email,
-          observacoes: validatedData.observacoes
+          observacoes: validatedData.observacoes,
+          origem: formCliente.origem,
+          tipo_cliente: formCliente.tipo_cliente,
+          data_primeiro_contato: new Date().toISOString()
         });
 
       if (error) {
@@ -513,14 +718,16 @@ const CRM = () => {
     }
   }, [colunas, fetchData]);
 
-  // Stats
-  const totalTicket = colunas.reduce((acc, col) => 
-    acc + col.clientes.reduce((sum, c) => sum + Number(c.ticket || 0), 0), 0
-  );
-  const totalClientes = colunas.reduce((acc, col) => acc + col.clientes.length, 0);
-  const colunaFechado = colunas.find(c => c.titulo.toLowerCase().includes('fechado'));
-  const clientesFechados = colunaFechado?.clientes.length || 0;
-  const ticketFechado = colunaFechado?.clientes.reduce((sum, c) => sum + Number(c.ticket || 0), 0) || 0;
+  // Atualizar meta mensal
+  const atualizarMetaMensal = useCallback(async (novaMeta: number) => {
+    if (config.id) {
+      await supabase.from('crm_configuracoes').update({ meta_mensal: novaMeta }).eq('id', config.id);
+    } else {
+      await supabase.from('crm_configuracoes').insert({ meta_mensal: novaMeta });
+    }
+    setConfig(prev => ({ ...prev, meta_mensal: novaMeta }));
+    toast.success('Meta atualizada');
+  }, [config.id]);
 
   if (loading) {
     return (
@@ -547,18 +754,50 @@ const CRM = () => {
               </h2>
               <p className="text-xs sm:text-sm text-muted-foreground mt-1">Arraste os cards para atualizar status</p>
             </div>
-            <Button onClick={() => setConfigModalOpen(true)} variant="outline" size="sm" className="self-start sm:self-auto">
-              <Settings className="w-4 h-4 mr-2" />
-              <span className="hidden sm:inline">Configurar</span>
-            </Button>
+            <div className="flex gap-2">
+              <Button onClick={() => navigate('/clientes-ativos')} variant="outline" size="sm">
+                <Users className="w-4 h-4 mr-2" />
+                <span className="hidden sm:inline">Clientes Ativos</span>
+              </Button>
+              <Button onClick={() => setConfigModalOpen(true)} variant="outline" size="sm">
+                <Settings className="w-4 h-4 mr-2" />
+                <span className="hidden sm:inline">Configurar</span>
+              </Button>
+            </div>
           </div>
 
-          {/* Summary Stats */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 md:gap-4 mb-4 sm:mb-6">
-            <StatCard label="Total no Pipeline" value={formatCurrency(totalTicket)} />
-            <StatCard label="Leads Ativos" value={totalClientes} />
-            <StatCard label="Negócios Fechados" value={clientesFechados} isPrimary />
-            <StatCard label="Valor Fechado" value={formatCurrency(ticketFechado)} isPrimary />
+          {/* Business Health Card + Churn Alerts */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4 sm:mb-6">
+            <div className="lg:col-span-2">
+              <BusinessHealthCard
+                mrr={mrr}
+                receitaNovaPrevista={stats.receitaProvavel}
+                churnMes={config.churn_mes_atual}
+                metaMensal={config.meta_mensal}
+                receitaFechada={stats.valorFechado}
+                onUpdateMeta={atualizarMetaMensal}
+              />
+            </div>
+            <div className="space-y-4">
+              <ChurnAlertsCard 
+                clientesEmRisco={clientesAtivosRisco} 
+                onVerDetalhes={() => navigate('/clientes-ativos')}
+              />
+              {perdas.length > 0 && (
+                <LossAnalysisCard perdas={perdas} totalPerdas={totalPerdas} />
+              )}
+            </div>
+          </div>
+
+          {/* Pipeline Stats */}
+          <div className="mb-4 sm:mb-6">
+            <PipelineStats
+              totalPipeline={stats.totalPipeline}
+              receitaProvavel={stats.receitaProvavel}
+              leadsAtivos={stats.totalLeadsAtivos}
+              negociosFechados={stats.negociosFechados}
+              valorFechado={stats.valorFechado}
+            />
           </div>
 
           {/* Kanban Board */}
@@ -582,6 +821,9 @@ const CRM = () => {
                           <CardTitle className="text-sm sm:text-base truncate">{coluna.titulo}</CardTitle>
                           <Badge variant="secondary" className="text-[10px] sm:text-xs px-1.5 flex-shrink-0">
                             {coluna.clientes.length}
+                          </Badge>
+                          <Badge variant="outline" className="text-[9px] px-1 flex-shrink-0">
+                            {coluna.probabilidade}%
                           </Badge>
                         </div>
                         <div className="flex gap-0.5 flex-shrink-0">
@@ -622,11 +864,13 @@ const CRM = () => {
                           key={cliente.id}
                           cliente={cliente}
                           colunaId={coluna.id}
+                          probabilidade={coluna.probabilidade || 20}
                           onDragStart={handleDragStart}
                           onDragEnd={handleDragEnd}
                           onView={abrirModalDetalhes}
                           onEdit={abrirModalEditarCliente}
                           onDelete={excluirCliente}
+                          onMarkLost={abrirModalPerda}
                           formatCurrency={formatCurrency}
                         />
                       ))}
@@ -666,6 +910,7 @@ const CRM = () => {
                     <div className={`w-3 h-3 rounded-full ${coluna.cor} flex-shrink-0`} />
                     <span className="text-sm truncate">{coluna.titulo}</span>
                     <Badge variant="secondary" className="text-xs flex-shrink-0">{coluna.clientes.length}</Badge>
+                    <Badge variant="outline" className="text-[10px] flex-shrink-0">{coluna.probabilidade}%</Badge>
                   </div>
                   <div className="flex gap-1 flex-shrink-0">
                     <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => abrirModalEditarColuna(coluna)}>
@@ -787,21 +1032,39 @@ const CRM = () => {
                 </Select>
               </div>
             </div>
-            <div>
-              <Label className="text-xs sm:text-sm">Serviço *</Label>
-              <Select 
-                value={formCliente.servico} 
-                onValueChange={(value) => setFormCliente(prev => ({ ...prev, servico: value }))}
-              >
-                <SelectTrigger className="h-9 sm:h-10 text-sm">
-                  <SelectValue placeholder="Selecione o serviço" />
-                </SelectTrigger>
-                <SelectContent className="z-50 bg-popover">
-                  {servicosDisponiveis.map((s) => (
-                    <SelectItem key={s} value={s}>{s}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+              <div>
+                <Label className="text-xs sm:text-sm">Serviço *</Label>
+                <Select 
+                  value={formCliente.servico} 
+                  onValueChange={(value) => setFormCliente(prev => ({ ...prev, servico: value }))}
+                >
+                  <SelectTrigger className="h-9 sm:h-10 text-sm">
+                    <SelectValue placeholder="Selecione o serviço" />
+                  </SelectTrigger>
+                  <SelectContent className="z-50 bg-popover">
+                    {servicosDisponiveis.map((s) => (
+                      <SelectItem key={s} value={s}>{s}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-xs sm:text-sm">Origem do Lead</Label>
+                <Select 
+                  value={formCliente.origem} 
+                  onValueChange={(value) => setFormCliente(prev => ({ ...prev, origem: value }))}
+                >
+                  <SelectTrigger className="h-9 sm:h-10 text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="z-50 bg-popover">
+                    {origensDisponiveis.map((o) => (
+                      <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
@@ -879,6 +1142,12 @@ const CRM = () => {
                   <p className="text-muted-foreground text-xs">Data de Contato</p>
                   <p className="font-medium">{clienteVisualizando.data_contato}</p>
                 </div>
+                {clienteVisualizando.origem && (
+                  <div>
+                    <p className="text-muted-foreground text-xs">Origem</p>
+                    <p className="font-medium">{origensDisponiveis.find(o => o.value === clienteVisualizando.origem)?.label}</p>
+                  </div>
+                )}
                 {clienteVisualizando.telefone && (
                   <div>
                     <p className="text-muted-foreground text-xs">Telefone</p>
@@ -886,7 +1155,7 @@ const CRM = () => {
                   </div>
                 )}
                 {clienteVisualizando.email && (
-                  <div>
+                  <div className="col-span-2">
                     <p className="text-muted-foreground text-xs">Email</p>
                     <p className="font-medium truncate">{clienteVisualizando.email}</p>
                   </div>
@@ -895,23 +1164,25 @@ const CRM = () => {
               {clienteVisualizando.observacoes && (
                 <div>
                   <p className="text-muted-foreground text-xs">Observações</p>
-                  <p className="mt-1 text-sm bg-secondary/30 p-3 rounded-lg">{clienteVisualizando.observacoes}</p>
+                  <p className="text-sm mt-1 p-2 bg-secondary/30 rounded">{clienteVisualizando.observacoes}</p>
                 </div>
               )}
             </div>
           )}
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" size="sm" onClick={() => setDetalhesModalOpen(false)}>Fechar</Button>
-            <Button size="sm" onClick={() => {
-              setDetalhesModalOpen(false);
-              if (clienteVisualizando) abrirModalEditarCliente(clienteVisualizando);
-            }}>
-              <Pencil className="w-4 h-4 mr-2" />
-              Editar
-            </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Modal de Motivo de Perda */}
+      <LossReasonModal
+        open={lossReasonModalOpen}
+        onOpenChange={setLossReasonModalOpen}
+        clienteNome={clientePerdendo?.nome || ""}
+        onConfirm={confirmarPerda}
+        onCancel={() => {
+          setLossReasonModalOpen(false);
+          setClientePerdendo(null);
+        }}
+      />
     </div>
   );
 };
