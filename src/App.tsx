@@ -12,6 +12,7 @@ const Index = lazy(() => import("./pages/Index"));
 const Metas = lazy(() => import("./pages/Metas"));
 const Comercial = lazy(() => import("./pages/Comercial"));
 const CRM = lazy(() => import("./pages/CRM"));
+const ClientesAtivos = lazy(() => import("./pages/ClientesAtivos"));
 const Relatorios = lazy(() => import("./pages/Relatorios"));
 const Suporte = lazy(() => import("./pages/Suporte"));
 const Usuarios = lazy(() => import("./pages/Usuarios"));
@@ -48,6 +49,7 @@ const App = () => (
               <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
               <Route path="/comercial" element={<ProtectedRoute><Comercial /></ProtectedRoute>} />
               <Route path="/crm" element={<ProtectedRoute><CRM /></ProtectedRoute>} />
+              <Route path="/clientes-ativos" element={<ProtectedRoute><ClientesAtivos /></ProtectedRoute>} />
               <Route path="/metas" element={<ProtectedRoute><Metas /></ProtectedRoute>} />
               <Route path="/relatorios" element={<ProtectedRoute><Relatorios /></ProtectedRoute>} />
               <Route path="/suporte" element={<ProtectedRoute><Suporte /></ProtectedRoute>} />

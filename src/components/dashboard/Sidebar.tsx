@@ -10,7 +10,8 @@ import {
   Rocket,
   Instagram,
   Globe,
-  UserCheck
+  UserCheck,
+  UsersRound
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { NavLink, useLocation } from "react-router-dom";
@@ -20,6 +21,7 @@ const menuItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/" },
   { icon: Users, label: "Comercial", path: "/comercial" },
   { icon: Kanban, label: "CRM", path: "/crm" },
+  { icon: UsersRound, label: "Clientes Ativos", path: "/clientes-ativos" },
   { icon: Target, label: "Metas", path: "/metas" },
   { icon: TrendingUp, label: "Relatórios", path: "/relatorios" },
   { icon: HelpCircle, label: "Suporte", path: "/suporte" },

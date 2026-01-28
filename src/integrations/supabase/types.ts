@@ -55,53 +55,142 @@ export type Database = {
           },
         ]
       }
+      clientes_ativos: {
+        Row: {
+          created_at: string
+          data_inicio_contrato: string
+          data_renovacao: string | null
+          empresa: string
+          escopo_contratado: string | null
+          id: string
+          lead_id: string | null
+          nome: string
+          observacoes: string | null
+          sinais_risco: string[] | null
+          status_cliente: string
+          tag_pareto: string | null
+          ultima_interacao: string | null
+          updated_at: string
+          valor_mensal: number
+        }
+        Insert: {
+          created_at?: string
+          data_inicio_contrato?: string
+          data_renovacao?: string | null
+          empresa: string
+          escopo_contratado?: string | null
+          id?: string
+          lead_id?: string | null
+          nome: string
+          observacoes?: string | null
+          sinais_risco?: string[] | null
+          status_cliente?: string
+          tag_pareto?: string | null
+          ultima_interacao?: string | null
+          updated_at?: string
+          valor_mensal?: number
+        }
+        Update: {
+          created_at?: string
+          data_inicio_contrato?: string
+          data_renovacao?: string | null
+          empresa?: string
+          escopo_contratado?: string | null
+          id?: string
+          lead_id?: string | null
+          nome?: string
+          observacoes?: string | null
+          sinais_risco?: string[] | null
+          status_cliente?: string
+          tag_pareto?: string | null
+          ultima_interacao?: string | null
+          updated_at?: string
+          valor_mensal?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clientes_ativos_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "crm_clientes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crm_clientes: {
         Row: {
           coluna_id: string
           created_at: string
           data_contato: string | null
+          data_fechamento: string | null
+          data_perda: string | null
+          data_primeiro_contato: string | null
           email: string | null
           empresa: string
+          estagio_quando_perdeu: string | null
           id: string
           iniciais: string | null
+          motivo_perda: string | null
           nome: string
           observacoes: string | null
+          origem: string | null
+          probabilidade: number | null
           responsavel: string | null
           servico: string | null
+          status: string | null
           telefone: string | null
           ticket: number | null
+          tipo_cliente: string | null
           updated_at: string
         }
         Insert: {
           coluna_id: string
           created_at?: string
           data_contato?: string | null
+          data_fechamento?: string | null
+          data_perda?: string | null
+          data_primeiro_contato?: string | null
           email?: string | null
           empresa: string
+          estagio_quando_perdeu?: string | null
           id?: string
           iniciais?: string | null
+          motivo_perda?: string | null
           nome: string
           observacoes?: string | null
+          origem?: string | null
+          probabilidade?: number | null
           responsavel?: string | null
           servico?: string | null
+          status?: string | null
           telefone?: string | null
           ticket?: number | null
+          tipo_cliente?: string | null
           updated_at?: string
         }
         Update: {
           coluna_id?: string
           created_at?: string
           data_contato?: string | null
+          data_fechamento?: string | null
+          data_perda?: string | null
+          data_primeiro_contato?: string | null
           email?: string | null
           empresa?: string
+          estagio_quando_perdeu?: string | null
           id?: string
           iniciais?: string | null
+          motivo_perda?: string | null
           nome?: string
           observacoes?: string | null
+          origem?: string | null
+          probabilidade?: number | null
           responsavel?: string | null
           servico?: string | null
+          status?: string | null
           telefone?: string | null
           ticket?: number | null
+          tipo_cliente?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -120,6 +209,7 @@ export type Database = {
           created_at: string
           id: string
           ordem: number
+          probabilidade: number | null
           titulo: string
           updated_at: string
         }
@@ -128,6 +218,7 @@ export type Database = {
           created_at?: string
           id?: string
           ordem?: number
+          probabilidade?: number | null
           titulo: string
           updated_at?: string
         }
@@ -136,10 +227,91 @@ export type Database = {
           created_at?: string
           id?: string
           ordem?: number
+          probabilidade?: number | null
           titulo?: string
           updated_at?: string
         }
         Relationships: []
+      }
+      crm_configuracoes: {
+        Row: {
+          churn_mes_atual: number | null
+          created_at: string
+          foco_mes: string | null
+          id: string
+          meta_mensal: number
+          meta_semanal_calls: number
+          meta_semanal_fechamentos: number
+          meta_semanal_propostas: number
+          updated_at: string
+        }
+        Insert: {
+          churn_mes_atual?: number | null
+          created_at?: string
+          foco_mes?: string | null
+          id?: string
+          meta_mensal?: number
+          meta_semanal_calls?: number
+          meta_semanal_fechamentos?: number
+          meta_semanal_propostas?: number
+          updated_at?: string
+        }
+        Update: {
+          churn_mes_atual?: number | null
+          created_at?: string
+          foco_mes?: string | null
+          id?: string
+          meta_mensal?: number
+          meta_semanal_calls?: number
+          meta_semanal_fechamentos?: number
+          meta_semanal_propostas?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      crm_perdas: {
+        Row: {
+          created_at: string
+          data_perda: string
+          empresa: string
+          estagio_quando_perdeu: string
+          id: string
+          lead_id: string | null
+          motivo: string
+          nome: string
+          valor: number
+        }
+        Insert: {
+          created_at?: string
+          data_perda?: string
+          empresa: string
+          estagio_quando_perdeu: string
+          id?: string
+          lead_id?: string | null
+          motivo: string
+          nome: string
+          valor?: number
+        }
+        Update: {
+          created_at?: string
+          data_perda?: string
+          empresa?: string
+          estagio_quando_perdeu?: string
+          id?: string
+          lead_id?: string | null
+          motivo?: string
+          nome?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_perdas_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "crm_clientes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       dashboard_config: {
         Row: {
