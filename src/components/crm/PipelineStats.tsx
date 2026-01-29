@@ -2,10 +2,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { DollarSign, Users, Target, TrendingUp } from "lucide-react";
 import { memo } from "react";
+import { motion } from "framer-motion";
 
 interface PipelineStatsProps {
   totalPipeline: number;
-  receitaProvavel: number;
   leadsAtivos: number;
   negociosFechados: number;
   valorFechado: number;
@@ -17,7 +17,8 @@ const StatItem = memo(({
   value, 
   subValue,
   isPrimary = false,
-  iconColor = "text-primary"
+  iconColor = "text-primary",
+  index = 0
 }: { 
   icon: React.ElementType; 
   label: string; 
@@ -25,32 +26,42 @@ const StatItem = memo(({
   subValue?: string;
   isPrimary?: boolean;
   iconColor?: string;
+  index?: number;
 }) => (
-  <Card className={`hover-lift transition-all ${isPrimary ? 'ring-1 ring-primary/20 bg-primary/5' : ''}`}>
-    <CardContent className="p-3 sm:p-4">
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0 flex-1">
-          <p className="text-[10px] sm:text-xs text-muted-foreground truncate">{label}</p>
-          <p className={`text-sm sm:text-xl font-bold truncate ${isPrimary ? 'text-primary' : 'text-foreground'}`}>
-            {value}
-          </p>
-          {subValue && (
-            <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">{subValue}</p>
-          )}
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ delay: index * 0.1, duration: 0.4 }}
+  >
+    <Card className={`hover-lift transition-all ${isPrimary ? 'ring-1 ring-primary/20 bg-primary/5' : ''}`}>
+      <CardContent className="p-3 sm:p-4">
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] sm:text-xs text-muted-foreground truncate">{label}</p>
+            <p className={`text-sm sm:text-xl font-bold truncate ${isPrimary ? 'text-primary' : 'text-foreground'}`}>
+              {value}
+            </p>
+            {subValue && (
+              <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">{subValue}</p>
+            )}
+          </div>
+          <motion.div 
+            className={`p-1.5 sm:p-2 rounded-lg bg-secondary ${iconColor}`}
+            whileHover={{ scale: 1.1 }}
+            transition={{ type: "spring", stiffness: 400 }}
+          >
+            <Icon className="w-3 h-3 sm:w-4 sm:h-4" />
+          </motion.div>
         </div>
-        <div className={`p-1.5 sm:p-2 rounded-lg bg-secondary ${iconColor}`}>
-          <Icon className="w-3 h-3 sm:w-4 sm:h-4" />
-        </div>
-      </div>
-    </CardContent>
-  </Card>
+      </CardContent>
+    </Card>
+  </motion.div>
 ));
 
 StatItem.displayName = "StatItem";
 
 export function PipelineStats({
   totalPipeline,
-  receitaProvavel,
   leadsAtivos,
   negociosFechados,
   valorFechado
@@ -59,31 +70,21 @@ export function PipelineStats({
     return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   };
 
-  const probabilidadeMedia = totalPipeline > 0 
-    ? Math.round((receitaProvavel / totalPipeline) * 100) 
-    : 0;
-
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-5 gap-2 sm:gap-3">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
       <StatItem
         icon={DollarSign}
         label="Total no Pipeline"
         value={formatCurrency(totalPipeline)}
         iconColor="text-blue-500"
-      />
-      <StatItem
-        icon={TrendingUp}
-        label="Receita Provável"
-        value={formatCurrency(receitaProvavel)}
-        subValue={`${probabilidadeMedia}% do total`}
-        iconColor="text-primary"
-        isPrimary
+        index={0}
       />
       <StatItem
         icon={Users}
         label="Leads Ativos"
         value={leadsAtivos}
         iconColor="text-yellow-500"
+        index={1}
       />
       <StatItem
         icon={Target}
@@ -91,6 +92,7 @@ export function PipelineStats({
         value={negociosFechados}
         isPrimary
         iconColor="text-green-500"
+        index={2}
       />
       <StatItem
         icon={DollarSign}
@@ -98,6 +100,7 @@ export function PipelineStats({
         value={formatCurrency(valorFechado)}
         isPrimary
         iconColor="text-green-500"
+        index={3}
       />
     </div>
   );

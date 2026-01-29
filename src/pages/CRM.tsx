@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, memo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Sidebar } from "@/components/dashboard/Sidebar";
 import { Header } from "@/components/dashboard/Header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,6 +10,7 @@ import { WhatsAppButton } from "@/components/dashboard/WhatsAppButton";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Skeleton } from "@/components/ui/skeleton";
 import { 
   Dialog,
   DialogContent,
@@ -43,7 +45,9 @@ import {
   Mail,
   Target,
   Zap,
-  Percent
+  Percent,
+  CheckCircle2,
+  BarChart3
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -59,6 +63,8 @@ import { PipelineStats } from "@/components/crm/PipelineStats";
 import { LossReasonModal } from "@/components/crm/LossReasonModal";
 import { ChurnAlertsCard } from "@/components/crm/ChurnAlertsCard";
 import { LossAnalysisCard } from "@/components/crm/LossAnalysisCard";
+import { ActivateClientModal } from "@/components/crm/ActivateClientModal";
+import { LossDetailsModal } from "@/components/crm/LossDetailsModal";
 import { useNavigate } from "react-router-dom";
 
 interface Cliente {
@@ -283,10 +289,13 @@ const CRM = () => {
   const [configModalOpen, setConfigModalOpen] = useState(false);
   const [colunaModalOpen, setColunaModalOpen] = useState(false);
   const [lossReasonModalOpen, setLossReasonModalOpen] = useState(false);
+  const [activateClientModalOpen, setActivateClientModalOpen] = useState(false);
+  const [lossDetailsModalOpen, setLossDetailsModalOpen] = useState(false);
   
   const [clienteEditando, setClienteEditando] = useState<Cliente | null>(null);
   const [clienteVisualizando, setClienteVisualizando] = useState<Cliente | null>(null);
   const [clientePerdendo, setClientePerdendo] = useState<Cliente | null>(null);
+  const [clienteAtivando, setClienteAtivando] = useState<Cliente | null>(null);
   const [colunaDestino, setColunaDestino] = useState<string>("");
   const [colunaEditando, setColunaEditando] = useState<Coluna | null>(null);
   
@@ -453,6 +462,19 @@ const CRM = () => {
       return;
     }
 
+    // Check if target is "Fechado" column
+    const targetColuna = colunas.find(c => c.id === targetColunaId);
+    const sourceColuna = colunas.find(c => c.id === draggedItem.colunaId);
+    const cliente = sourceColuna?.clientes.find(c => c.id === draggedItem.clienteId);
+
+    if (targetColuna?.titulo.toLowerCase().includes('fechado') && cliente) {
+      // Open activation modal instead of just moving
+      setClienteAtivando(cliente);
+      setActivateClientModalOpen(true);
+      setDraggedItem(null);
+      return;
+    }
+
     const { error } = await supabase
       .from('crm_clientes')
       .update({ coluna_id: targetColunaId })
@@ -461,13 +483,66 @@ const CRM = () => {
     if (error) {
       toast.error('Erro ao mover cliente');
     } else {
-      const targetColuna = colunas.find(c => c.id === targetColunaId);
       toast.success(`Cliente movido para ${targetColuna?.titulo}`);
       fetchData();
     }
     
     setDraggedItem(null);
   }, [draggedItem, colunas, fetchData]);
+
+  // Ativar cliente (mover para clientes ativos)
+  const confirmarAtivacaoCliente = useCallback(async (data: {
+    valor_mensal: number;
+    data_inicio_contrato: string;
+    data_renovacao: string;
+    escopo_contratado: string;
+    observacoes: string;
+  }) => {
+    if (!clienteAtivando) return;
+
+    // Find fechado column
+    const colunaFechado = colunas.find(c => c.titulo.toLowerCase().includes('fechado'));
+    if (!colunaFechado) {
+      toast.error('Coluna "Fechado" não encontrada');
+      return;
+    }
+
+    // Move to fechado column first
+    await supabase
+      .from('crm_clientes')
+      .update({ 
+        coluna_id: colunaFechado.id,
+        data_fechamento: new Date().toISOString()
+      })
+      .eq('id', clienteAtivando.id);
+
+    // Create active client
+    const { error: insertError } = await supabase
+      .from('clientes_ativos')
+      .insert({
+        lead_id: clienteAtivando.id,
+        nome: clienteAtivando.nome,
+        empresa: clienteAtivando.empresa,
+        valor_mensal: data.valor_mensal,
+        data_inicio_contrato: data.data_inicio_contrato,
+        data_renovacao: data.data_renovacao || null,
+        escopo_contratado: data.escopo_contratado,
+        observacoes: data.observacoes || null,
+        status_cliente: 'saudavel',
+        sinais_risco: []
+      });
+
+    if (insertError) {
+      console.error('Erro ao criar cliente ativo:', insertError);
+      toast.error('Erro ao ativar cliente');
+    } else {
+      toast.success(`🎉 ${clienteAtivando.nome} agora é um cliente ativo!`);
+      fetchData();
+    }
+
+    setActivateClientModalOpen(false);
+    setClienteAtivando(null);
+  }, [clienteAtivando, colunas, fetchData]);
 
   const handleDragEnd = useCallback(() => {
     setDraggedItem(null);
@@ -784,7 +859,11 @@ const CRM = () => {
                 onVerDetalhes={() => navigate('/clientes-ativos')}
               />
               {perdas.length > 0 && (
-                <LossAnalysisCard perdas={perdas} totalPerdas={totalPerdas} />
+                <LossAnalysisCard 
+                  perdas={perdas} 
+                  totalPerdas={totalPerdas} 
+                  onVerDetalhes={() => setLossDetailsModalOpen(true)}
+                />
               )}
             </div>
           </div>
@@ -793,7 +872,6 @@ const CRM = () => {
           <div className="mb-4 sm:mb-6">
             <PipelineStats
               totalPipeline={stats.totalPipeline}
-              receitaProvavel={stats.receitaProvavel}
               leadsAtivos={stats.totalLeadsAtivos}
               negociosFechados={stats.negociosFechados}
               valorFechado={stats.valorFechado}
@@ -1182,6 +1260,26 @@ const CRM = () => {
           setLossReasonModalOpen(false);
           setClientePerdendo(null);
         }}
+      />
+
+      {/* Modal de Ativação de Cliente */}
+      <ActivateClientModal
+        open={activateClientModalOpen}
+        onOpenChange={setActivateClientModalOpen}
+        clienteNome={clienteAtivando?.nome || ""}
+        clienteEmpresa={clienteAtivando?.empresa || ""}
+        ticketSugerido={Number(clienteAtivando?.ticket) || 0}
+        onConfirm={confirmarAtivacaoCliente}
+        onCancel={() => {
+          setActivateClientModalOpen(false);
+          setClienteAtivando(null);
+        }}
+      />
+
+      {/* Modal de Detalhes de Perdas */}
+      <LossDetailsModal
+        open={lossDetailsModalOpen}
+        onOpenChange={setLossDetailsModalOpen}
       />
     </div>
   );
