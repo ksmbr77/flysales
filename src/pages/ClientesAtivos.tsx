@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Sidebar } from "@/components/dashboard/Sidebar";
 import { Header } from "@/components/dashboard/Header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Skeleton } from "@/components/ui/skeleton";
 import { 
   Dialog,
   DialogContent,
@@ -37,12 +39,14 @@ import {
   Pencil,
   Trash2,
   Eye,
-  Filter
+  Filter,
+  UserMinus
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { ClientChurnModal } from "@/components/crm/ClientChurnModal";
 
 interface ClienteAtivo {
   id: string;
@@ -106,8 +110,10 @@ const ClientesAtivos = () => {
   const [filtroStatus, setFiltroStatus] = useState<string>("todos");
   const [modalOpen, setModalOpen] = useState(false);
   const [detalhesOpen, setDetalhesOpen] = useState(false);
+  const [churnModalOpen, setChurnModalOpen] = useState(false);
   const [clienteEditando, setClienteEditando] = useState<ClienteAtivo | null>(null);
   const [clienteVisualizando, setClienteVisualizando] = useState<ClienteAtivo | null>(null);
+  const [clienteSaindo, setClienteSaindo] = useState<ClienteAtivo | null>(null);
 
   const [formCliente, setFormCliente] = useState({
     nome: "",
@@ -266,6 +272,32 @@ const ClientesAtivos = () => {
     }
   };
 
+  const abrirModalChurn = (cliente: ClienteAtivo) => {
+    setClienteSaindo(cliente);
+    setChurnModalOpen(true);
+  };
+
+  const confirmarChurn = async (motivo: string, detalhes: string) => {
+    if (!clienteSaindo) return;
+
+    // Remove the client
+    const { error } = await supabase
+      .from('clientes_ativos')
+      .delete()
+      .eq('id', clienteSaindo.id);
+
+    if (error) {
+      toast.error('Erro ao registrar saída');
+    } else {
+      toast.success(`Cliente ${clienteSaindo.nome} marcado como inativo`);
+      // TODO: Could log to a churn history table for analytics
+      fetchClientes();
+    }
+
+    setChurnModalOpen(false);
+    setClienteSaindo(null);
+  };
+
   const clientesFiltrados = clientes.filter(c => 
     filtroStatus === "todos" || c.status_cliente === filtroStatus
   );
@@ -355,14 +387,22 @@ const ClientesAtivos = () => {
 
           {/* Lista de Clientes */}
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
-            {clientesFiltrados.map((cliente) => {
-              const statusConfig = statusColors[cliente.status_cliente] || statusColors.saudavel;
-              return (
-                <Card 
-                  key={cliente.id} 
-                  className={`${statusConfig.bg} border transition-all hover:shadow-md`}
-                >
-                  <CardContent className="p-4">
+            <AnimatePresence>
+              {clientesFiltrados.map((cliente, index) => {
+                const statusConfig = statusColors[cliente.status_cliente] || statusColors.saudavel;
+                return (
+                  <motion.div
+                    key={cliente.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                    transition={{ delay: index * 0.05, duration: 0.3 }}
+                    layout
+                  >
+                    <Card 
+                      className={`${statusConfig.bg} border transition-all hover:shadow-md hover:-translate-y-1`}
+                    >
+                      <CardContent className="p-4">
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-center gap-3">
                         <Avatar className="w-10 h-10 bg-primary/10">
@@ -381,6 +421,9 @@ const ClientesAtivos = () => {
                         </Button>
                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => abrirModalEditar(cliente)}>
                           <Pencil className="w-3 h-3" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-orange-500" onClick={() => abrirModalChurn(cliente)}>
+                          <UserMinus className="w-3 h-3" />
                         </Button>
                         <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => excluirCliente(cliente.id)}>
                           <Trash2 className="w-3 h-3" />
@@ -458,8 +501,10 @@ const ClientesAtivos = () => {
                     </div>
                   </CardContent>
                 </Card>
-              );
-            })}
+              </motion.div>
+            );
+          })}
+            </AnimatePresence>
           </div>
 
           {clientesFiltrados.length === 0 && (
@@ -672,6 +717,19 @@ const ClientesAtivos = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Modal de Churn */}
+      <ClientChurnModal
+        open={churnModalOpen}
+        onOpenChange={setChurnModalOpen}
+        clienteNome={clienteSaindo?.nome || ""}
+        valorMensal={clienteSaindo?.valor_mensal || 0}
+        onConfirm={confirmarChurn}
+        onCancel={() => {
+          setChurnModalOpen(false);
+          setClienteSaindo(null);
+        }}
+      />
     </div>
   );
 };
